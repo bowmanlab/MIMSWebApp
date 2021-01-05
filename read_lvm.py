@@ -126,4 +126,6 @@ for col in range(2, 18):
     fig = go.Figure(data=data, layout=layout)
     pio.write_html(fig, file= col_str[col] + ".html", auto_open=False)
     
-frame.to_csv('MIMS_data.csv.gz')
+## placing this outside of the github repository to save space
+    
+frame.to_csv('../MIMS_data.csv.gz')
