@@ -64,6 +64,7 @@ for filename in all_files:
 
 frame = pd.concat(li, axis=0, ignore_index=True)
 sort = frame.sort_values(by = 'date_time', ascending = True)
+sort.replace([np.inf, -np.inf], np.nan, inplace=True) 
 
 ## Create plots.
             
@@ -71,7 +72,7 @@ for col in range(2, 18):
     
     ## filter outliers based on z-score
     
-    col_filter = np.abs(stats.zscore(sort.iloc[:,col])) < 3
+    col_filter = np.abs(stats.zscore(sort.iloc[:,col], nan_policy = 'omit')) < 3
     
     trace1 = go.Scatter(
         x = sort['date_time'][col_filter],
