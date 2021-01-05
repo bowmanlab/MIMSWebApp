@@ -7,4 +7,3 @@ The basic procedure is:
 * The plots are then pushed to this repository by Git and a cron job.
 * ecoobs.ucsd.edu uses these plots as iframes.
 
-test
