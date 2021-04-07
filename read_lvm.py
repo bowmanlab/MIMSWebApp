@@ -132,4 +132,4 @@ for col in range(2, 18):
     fig = go.Figure(data=data, layout=layout)
     pio.write_html(fig, file= 'ecoobs/' + col_str[col] + ".html", auto_open=False)
     
-frame.to_csv('MIMS_data.csv.gz')
+frame.to_csv('MIMS_data_vol1.csv.gz')
