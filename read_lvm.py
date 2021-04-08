@@ -11,7 +11,7 @@ path = '/home/jeff/Dropbox/MIMS_Data'  # use your path
 all_files = glob.glob(path + "/*.lvm")
 
 col_str = ["Empty", "Julian-Date", "Inlet Temperature", "Water", "N2", "O2", "Ar", "O2:Ar", "N2:Ar", "Total", "DMS-62",
-           "DMS-47", "Bromoform-173", "Bromoform-171", "Bromoform-175", "Isoprene-67", "Isoprene-68", "Isoprene-53"]
+           "DMS-47", "Bromoform-173", "Bromoform-171", "Bromoform-175", "Isoprene-67", "Isoprene-68", "Isoprene-53", "notes"]
 
 ## Iterate across all lvm files parse, adding to list.
 
