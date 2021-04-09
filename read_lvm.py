@@ -217,7 +217,7 @@ for col in range(2, 18):
             color='rgb(26, 118, 255)'
         ),
         line_shape='spline',
-        line_smoothing=1.3,
+        line_smoothing=0,
     )
 
     data = [trace1]
