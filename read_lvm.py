@@ -138,8 +138,11 @@ li = []
 
 for filename in lvm_files:
     
-    base_name = filename.split('/')[-1]
-    base_name = filename.split('\\')[-1]
+    if development == True:
+        base_name = filename.split('\\')[-1]
+    else:
+        base_name = filename.split('/')[-1]
+
     year = base_name.split('_')[0][0:4]
     
     df = pd.read_csv(filename, sep='\t', skiprows=21, header=0, names = col_str, index_col = False)
