@@ -79,7 +79,7 @@ trace2 = go.Scatter(
     yaxis='y1',
     mode='markers',
     marker=dict(size=20, color = [edna_colors[x] for x in edna_event_log_df.filter_number.tolist()]),
-    name = 'eDNA sample collected'
+    name = 'eDNA sample'
 )
 
 data = [trace1, trace2]
@@ -88,7 +88,7 @@ layout = go.Layout(
     plot_bgcolor='#f6f7f8',
     paper_bgcolor='#f6f7f8',
     title=go.layout.Title(
-        text='In situ temperature',
+        text='In situ Temperature',
         xref='paper',
         font=dict(
             family='Open Sans, sans-serif',
