@@ -70,13 +70,15 @@ trace1 = go.Scatter(
     name = 'Temperature'
 )
 
+edna_colors = ['#fbdad8', '#f6b6b0', '#f29189', '#ed6d61', '#e94b3c', '#e6301f', '#d12717', '#9d1d11', '#e94b3c']
+
 trace2 = go.Scatter(
     x = edna_event_log_df['date_time'],
     y = edna_event_log_df.loc[:, 'temp_1_min_mean'],
     xaxis='x1',
     yaxis='y1',
     mode='markers',
-    marker=dict(size=20, color='coral'),
+    marker=dict(size=20, color = [edna_colors[x] for x in edna_event_log_df.filter_number.tolist()]),
     name = 'eDNA sample collected'
 )
 
