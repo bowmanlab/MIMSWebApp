@@ -121,11 +121,17 @@ layout = go.Layout(
 )
 
 fig = go.Figure(data=data, layout=layout)
+
 fig.update_layout(legend_font = dict(
                 family='Open Sans, sans-serif',
                 size=18,
-                color='#000000'
-            ))
+                color='#000000'),
+    legend=dict(
+        yanchor = 'top',
+        xanchor = 'left',
+        y = 0.99,
+        x = 0.01)
+    )
 
 pio.write_html(fig, file= 'ecoobs/' + 'In situ temperature' + ".html", auto_open=False)
 
