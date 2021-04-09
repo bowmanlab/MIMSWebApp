@@ -6,9 +6,111 @@ import plotly.graph_objs as go
 import plotly.io as pio
 from scipy import stats
 
-path = '/home/jeff/Dropbox/MIMS_Data'  # use your path
-#path = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data'
-all_files = glob.glob(path + "/*.lvm")
+## Switch for transitioning between dev machine (windows) and production
+## machine (Linux)
+
+development = False
+
+if development == True:
+    path_mims = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data//'
+    path_edna = 'C://Users//jeff//Documents//bowman_lab//MIMS//Apps//Pier-Sampler-Data//'
+    
+else:  
+    path_mims = '/home/jeff/Dropbox/MIMS_Data/'  # use your path
+    path_edna = '/home/jeff/Dropbox/Apps/Pier-Sampler-Data/'  # use your path
+
+lvm_files = glob.glob(path_mims + "*.lvm")
+edna_log_files = glob.glob(path_edna + 'PierSamplerData-*.log')
+edna_event_log_files = glob.glob(path_edna + 'PierSamplerEventLog-*.log')
+
+#### eDNA sampler data ####
+
+## Iterate across all log files, parse, adding to list.
+
+edna_logs = []
+
+for log in edna_log_files:
+    edna_logs_cols = ['date', 'time', 'epoch', 'temp_1_min_mean', 'temp_1_day_mean', 'flow_meter_count', 'flow_meter_hz', 'flow_L_min']
+    df = pd.read_csv(log, names = edna_logs_cols, delim_whitespace = True, index_col = False)
+    df['date_time'] = df['date'] + ' ' + df['time']
+    df['date_time'] = pd.to_datetime(df['date_time'], format = '%Y-%m-%d %H:%M:%S', exact = True)
+    
+    edna_logs.append(df)
+    
+edna_log_df = pd.concat(edna_logs, axis=0, ignore_index = True)
+edna_log_df.sort_values(by = 'date_time', ascending = True, inplace = True)
+
+df = ''
+
+edna_event_logs = []
+
+for log in edna_event_log_files:
+    edna_event_logs_cols = ['date', 'time', 'epoch', 'temp_1_sec_mean', 'temp_1_min_mean', 'temp_1_day_mean','flow_meter_count', 'flow_meter_hz', 'flow_L_min', 'fiter_number']
+    df = pd.read_csv(log, names = edna_event_logs_cols, delim_whitespace = True, index_col = False)
+    df['date_time'] = df['date'] + ' ' + df['time']
+    df['date_time'] = pd.to_datetime(df['date_time'], format = '%Y-%m-%d %H:%M:%S', exact = True)
+    
+    edna_event_logs.append(df)
+    
+edna_event_log_df = pd.concat(edna_event_logs, axis=0, ignore_index = True)
+edna_event_log_df.sort_values(by = 'date_time', ascending = True, inplace = True)
+
+## plot ##
+
+trace1 = go.Scatter(
+    x = edna_log_df['date_time'],
+    y = edna_log_df.loc[:, 'temp_1_min_mean'],
+    xaxis='x1',
+    yaxis='y1',
+    marker=go.scatter.Marker(
+        color='rgb(26, 118, 255)'
+    ),
+    line_shape='spline',
+    line_smoothing=1,
+)
+
+data = [trace1]
+
+layout = go.Layout(
+    plot_bgcolor='#f6f7f8',
+    paper_bgcolor='#f6f7f8',
+    title=go.layout.Title(
+        text='In situ temperature',
+        xref='paper',
+        font=dict(
+            family='Open Sans, sans-serif',
+            size=22, 
+            color='#000000'
+        )
+    ),
+    xaxis=go.layout.XAxis(
+        title=go.layout.xaxis.Title(
+            text='Date',
+            font=dict(
+                family='Open Sans, sans-serif',
+                size=18,
+                color='#000000'
+            )
+        )
+    ),
+    yaxis=go.layout.YAxis(
+        showexponent='all',
+        exponentformat='e',
+        title=go.layout.yaxis.Title(
+            text='In situ temperature',
+            font=dict(
+                family='Open Sans, sans-serif',
+                size=18,
+                color='#000000'
+            )
+        )
+    )
+)
+
+fig = go.Figure(data=data, layout=layout)
+pio.write_html(fig, file= 'ecoobs/' + 'In situ temperature' + ".html", auto_open=False)
+
+#### MIMS data ####
 
 col_str = ["Empty", "Julian-Date", "Inlet Temperature", "Water", "N2", "O2", "Ar", "O2:Ar", "N2:Ar", "Total", "DMS-62",
            "DMS-47", "Bromoform-173", "Bromoform-171", "Bromoform-175", "Isoprene-67", "Isoprene-68", "Isoprene-53", "notes"]
@@ -17,10 +119,10 @@ col_str = ["Empty", "Julian-Date", "Inlet Temperature", "Water", "N2", "O2", "Ar
 
 li = []
 
-for filename in all_files:
+for filename in lvm_files:
     
     base_name = filename.split('/')[-1]
-#    base_name = filename.split('\\')[-1]
+    base_name = filename.split('\\')[-1]
     year = base_name.split('_')[0][0:4]
     
     df = pd.read_csv(filename, sep='\t', skiprows=21, header=0, names = col_str, index_col = False)
@@ -56,7 +158,6 @@ for filename in all_files:
     
     if year == '2021':
         df.drop(df[df.day == 366].index, inplace = True)
-    
     
     li.append(df)
     
