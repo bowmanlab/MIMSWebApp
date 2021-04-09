@@ -45,7 +45,7 @@ df = ''
 edna_event_logs = []
 
 for log in edna_event_log_files:
-    edna_event_logs_cols = ['date', 'time', 'epoch', 'temp_1_sec_mean', 'temp_1_min_mean', 'temp_1_day_mean','flow_meter_count', 'flow_meter_hz', 'flow_L_min', 'fiter_number']
+    edna_event_logs_cols = ['date', 'time', 'epoch', 'temp_1_sec_mean', 'temp_1_min_mean', 'temp_1_day_mean','flow_meter_count', 'flow_meter_hz', 'flow_L_min', 'filter_number']
     df = pd.read_csv(log, names = edna_event_logs_cols, delim_whitespace = True, index_col = False)
     df['date_time'] = df['date'] + ' ' + df['time']
     df['date_time'] = pd.to_datetime(df['date_time'], format = '%Y-%m-%d %H:%M:%S', exact = True)
@@ -66,10 +66,21 @@ trace1 = go.Scatter(
         color='rgb(26, 118, 255)'
     ),
     line_shape='spline',
-    line_smoothing=1,
+    line_smoothing=0,
+    name = 'Temperature'
 )
 
-data = [trace1]
+trace2 = go.Scatter(
+    x = edna_event_log_df['date_time'],
+    y = edna_event_log_df.loc[:, 'temp_1_min_mean'],
+    xaxis='x1',
+    yaxis='y1',
+    mode='markers',
+    marker=dict(size=20, color='coral'),
+    name = 'eDNA sample collected'
+)
+
+data = [trace1, trace2]
 
 layout = go.Layout(
     plot_bgcolor='#f6f7f8',
@@ -108,6 +119,12 @@ layout = go.Layout(
 )
 
 fig = go.Figure(data=data, layout=layout)
+fig.update_layout(legend_font = dict(
+                family='Open Sans, sans-serif',
+                size=18,
+                color='#000000'
+            ))
+
 pio.write_html(fig, file= 'ecoobs/' + 'In situ temperature' + ".html", auto_open=False)
 
 #### MIMS data ####
