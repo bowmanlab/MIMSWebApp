@@ -78,7 +78,7 @@ trace2 = go.Scatter(
     xaxis='x1',
     yaxis='y1',
     mode='markers',
-    marker=dict(size=20, color = [edna_colors[x] for x in edna_event_log_df.filter_number.tolist()]),
+    marker=dict(size=20, color = [edna_colors[x - 1] for x in edna_event_log_df.filter_number.tolist()]),
     name = 'eDNA sample'
 )
 
