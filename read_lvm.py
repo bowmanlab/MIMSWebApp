@@ -70,7 +70,7 @@ trace1 = go.Scatter(
     name = 'Temperature'
 )
 
-edna_colors = ['#fbdad8', '#f6b6b0', '#f29189', '#ed6d61', '#e94b3c', '#e6301f', '#d12717', '#9d1d11', '#e94b3c']
+edna_colors = ['#fbdad8', '#f6b6b0', '#f29189', '#ed6d61', '#e94b3c', '#e6301f', '#d12717', '#9d1d11', '#e6e93c']
 
 trace2 = go.Scatter(
     x = edna_event_log_df['date_time'],
