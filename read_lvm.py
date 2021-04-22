@@ -247,8 +247,6 @@ edna_log_df['O2_sat'] = O2sat([33.5] * edna_log_df.shape[0], edna_log_df['temp_1
 edna_log_df['Ar_sat'] = Arsat([33.5] * edna_log_df.shape[0], edna_log_df['temp_1_min_mean'])
 edna_log_df['O2:Ar_sat'] = edna_log_df['O2_sat'] / edna_log_df['Ar_sat']
 
-!!! you are here
-
 ## It looks like the easiest way to join the MIMS and eDNA datasets is to round
 ## both to nearest minute, eliminate duplicates, and glue together.
 
