@@ -6,6 +6,52 @@ import plotly.graph_objs as go
 import plotly.io as pio
 from scipy import stats
 
+#%%% Functions
+
+## Define function to calculate Ar at saturation based on Hamme and Emerson, 2004
+
+def Arsat(S, T):
+    
+    TS = np.log(np.subtract(298.15,T) / np.add(273.15,T))
+    
+    A0 = 2.7915
+    A1 = 3.17609
+    A2 = 4.13116
+    A3 = 4.90379
+    B0 = -6.96233 * 10 ** -3
+    B1 = -7.66670 * 10 ** -3
+    B2 = -1.16888 * 10 ** -2
+    
+    Ar = np.exp(A0 + A1*TS + A2*np.power(TS,2) + A3*np.power(TS,3) + S*(B0 + B1*TS + B2*np.power(TS,2)))
+    
+    ## final units are umol kg-1
+    
+    return(Ar)
+
+## Define function to calculate O2 at saturation based on Hamme and Emerson, 2004
+
+def O2sat(S, T):
+    
+    TS = np.log(np.subtract(298.15,T) / np.add(273.15,T))
+    
+    A0 = 5.80818
+    A1 = 3.20684
+    A2 = 4.11890
+    A3 = 4.93845
+    A4 = 1.01567
+    A5 = 1.41575
+    B0 = -7.01211 * 10 ** -3
+    B1 = -7.25958 * 10 ** -3
+    B2 = -7.93334 * 10 ** -3
+    B3 = -5.54491 * 10 ** -3
+    C0 = -1.32412 * 10 ** -7
+    
+    O2 = np.exp(A0 + A1*TS + A2*np.power(TS,2) + A3*np.power(TS,3) + A4*np.power(TS,4) + A5*np.power(TS,5) + S*(B0 + B1*TS + B2*np.power(TS,2) + B3*np.power(TS,3) + C0*np.power(S,2)))
+    
+    ## final units are umol kg-1
+    
+    return(O2)
+
 ## Switch for transitioning between dev machine (windows) and production
 ## machine (Linux)
 
@@ -194,6 +240,90 @@ for filename in lvm_files:
 frame = pd.concat(li, axis=0, ignore_index=True)
 sort = frame.sort_values(by = 'date_time', ascending = True)
 sort.replace([np.inf, -np.inf], np.nan, inplace=True) 
+
+## Calculate %O2/%Ar at sat
+
+edna_log_df['O2_sat'] = O2sat([33.5] * edna_log_df.shape[0], edna_log_df['temp_1_min_mean'])
+edna_log_df['Ar_sat'] = Arsat([33.5] * edna_log_df.shape[0], edna_log_df['temp_1_min_mean'])
+edna_log_df['O2:Ar_sat'] = edna_log_df['O2_sat'] / edna_log_df['Ar_sat']
+
+!!! you are here
+
+## It looks like the easiest way to join the MIMS and eDNA datasets is to round
+## both to nearest minute, eliminate duplicates, and glue together.
+
+edna_log_df_round = edna_log_df[['date_time', 'O2_sat', 'O2:Ar_sat']]
+edna_log_df_round['date_time'] = edna_log_df_round.date_time.round('min')
+edna_log_df_round.drop_duplicates(subset = 'date_time', inplace = True)
+edna_log_df_round.index = edna_log_df_round.date_time
+
+sort_round = sort[['date_time', 'O2:Ar']]
+sort_round['date_time'] = sort.date_time.round('min')
+sort_round.drop_duplicates(subset = 'date_time', inplace = True)
+sort_round.index = sort_round.date_time
+
+edna_mims_round = pd.concat([edna_log_df_round, sort_round], axis = 1, join = 'inner')
+edna_mims_round.drop(columns = 'date_time', inplace = True)
+
+## calculate [O2]bio.  Units are umol L-1
+
+edna_mims_round['o2_bio'] = (edna_mims_round['O2:Ar'] / edna_mims_round['O2:Ar_sat'] - 1) * edna_mims_round['O2_sat']
+
+## Plot [O2]bio
+
+trace1 = go.Scatter(
+    x = edna_mims_round.index,
+    y = edna_mims_round.loc[:, 'o2_bio'],
+    xaxis='x1',
+    yaxis='y1',
+    marker=go.scatter.Marker(
+        color='rgb(26, 118, 255)'
+    ),
+    line_shape='spline',
+    line_smoothing=0,
+    name = '[O2]bio'
+)
+
+data = [trace1]
+
+layout = go.Layout(
+    plot_bgcolor='#f6f7f8',
+    paper_bgcolor='#f6f7f8',
+    title=go.layout.Title(
+        text='[O2]bio',
+        xref='paper',
+        font=dict(
+            family='Open Sans, sans-serif',
+            size=22, 
+            color='#000000'
+        )
+    ),
+    xaxis=go.layout.XAxis(
+        title=go.layout.xaxis.Title(
+            text='Date',
+            font=dict(
+                family='Open Sans, sans-serif',
+                size=18,
+                color='#000000'
+            )
+        )
+    ),
+    yaxis=go.layout.YAxis(
+        showexponent='all',
+        exponentformat='e',
+        title=go.layout.yaxis.Title(
+            text='micromolar',
+            font=dict(
+                family='Open Sans, sans-serif',
+                size=18,
+                color='#000000'
+            )
+        )
+    )
+)
+
+fig = go.Figure(data=data, layout=layout)
+pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 
 ## Create plots.
             
