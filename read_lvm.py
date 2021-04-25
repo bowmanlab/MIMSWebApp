@@ -52,6 +52,79 @@ def O2sat(S, T):
     
     return(O2)
 
+## Function for general layout for plots.
+
+def plot_layout(name, ylab):
+    layout = go.Layout(
+        plot_bgcolor='#f6f7f8',
+        paper_bgcolor='#f6f7f8',
+        title=go.layout.Title(
+            text=name,
+            xref='paper',
+            font=dict(
+                family='Open Sans, sans-serif',
+                size=22, 
+                color='#000000'
+            )
+        ),
+        xaxis=go.layout.XAxis(
+            title=go.layout.xaxis.Title(
+                text='Date',
+                font=dict(
+                    family='Open Sans, sans-serif',
+                    size=18,
+                    color='#000000'
+                )
+            )
+        ),
+        yaxis=go.layout.YAxis(
+            showexponent='all',
+            exponentformat='e',
+            title=go.layout.yaxis.Title(
+                text=ylab,
+                font=dict(
+                    family='Open Sans, sans-serif',
+                    size=18,
+                    color='#000000'
+                )
+            )
+        )
+    )
+    
+    return(layout)
+
+## Function for line trace for plots.
+
+def plot_trace(data, paramx, paramy, name, data_filter = None):
+    
+    ## Allow the index to be the x variable.
+    
+    if paramx == 'index':
+        paramx = data.index
+    else:
+        paramx = data[paramx]
+        
+    try:
+        if data_filter == None:
+            data_filter = [True] * len(paramx)
+    except ValueError:
+        pass
+    
+    trace = go.Scatter(
+    x = paramx[data_filter],
+    y = data.loc[:, paramy][data_filter],
+    xaxis='x1',
+    yaxis='y1',
+    marker=go.scatter.Marker(
+        color='rgb(26, 118, 255)'
+    ),
+    line_shape='spline',
+    line_smoothing=0,
+    name = name
+    )
+    
+    return(trace)
+
 ## Switch for transitioning between dev machine (windows) and production
 ## machine (Linux)
 
@@ -69,7 +142,7 @@ lvm_files = glob.glob(path_mims + "*.lvm")
 edna_log_files = glob.glob(path_edna + 'PierSamplerData-*.log')
 edna_event_log_files = glob.glob(path_edna + 'PierSamplerEventLog-*.log')
 
-#### eDNA sampler data ####
+#%% eDNA sampler data 
 
 ## Iterate across all log files, parse, adding to list.
 
@@ -103,18 +176,7 @@ edna_event_log_df.sort_values(by = 'date_time', ascending = True, inplace = True
 
 ## plot ##
 
-trace1 = go.Scatter(
-    x = edna_log_df['date_time'],
-    y = edna_log_df.loc[:, 'temp_1_min_mean'],
-    xaxis='x1',
-    yaxis='y1',
-    marker=go.scatter.Marker(
-        color='rgb(26, 118, 255)'
-    ),
-    line_shape='spline',
-    line_smoothing=0,
-    name = 'Temperature'
-)
+trace1 = plot_trace(edna_log_df, 'date_time', 'temp_1_min_mean', 'Temperature')
 
 edna_colors = ['#fbdad8', '#f6b6b0', '#f29189', '#ed6d61', '#e94b3c', '#e6301f', '#d12717', '#9d1d11', '#e6e93c']
 
@@ -129,43 +191,7 @@ trace2 = go.Scatter(
 )
 
 data = [trace1, trace2]
-
-layout = go.Layout(
-    plot_bgcolor='#f6f7f8',
-    paper_bgcolor='#f6f7f8',
-    title=go.layout.Title(
-        text='In situ Temperature',
-        xref='paper',
-        font=dict(
-            family='Open Sans, sans-serif',
-            size=22, 
-            color='#000000'
-        )
-    ),
-    xaxis=go.layout.XAxis(
-        title=go.layout.xaxis.Title(
-            text='Date',
-            font=dict(
-                family='Open Sans, sans-serif',
-                size=18,
-                color='#000000'
-            )
-        )
-    ),
-    yaxis=go.layout.YAxis(
-        showexponent='all',
-        exponentformat='e',
-        title=go.layout.yaxis.Title(
-            text='In situ temperature',
-            font=dict(
-                family='Open Sans, sans-serif',
-                size=18,
-                color='#000000'
-            )
-        )
-    )
-)
-
+layout = plot_layout('In situ temperature', 'In situ temperature')
 fig = go.Figure(data=data, layout=layout)
 
 fig.update_layout(legend_font = dict(
@@ -177,11 +203,11 @@ fig.update_layout(legend_font = dict(
         xanchor = 'left',
         y = 0.99,
         x = 0.01)
-    )
+)
 
 pio.write_html(fig, file= 'ecoobs/' + 'In situ temperature' + ".html", auto_open=False)
 
-#### MIMS data ####
+#%% MIMS data
 
 col_str = ["Empty", "Julian-Date", "Inlet Temperature", "Water", "N2", "O2", "Ar", "O2:Ar", "N2:Ar", "Total", "DMS-62",
            "DMS-47", "Bromoform-173", "Bromoform-171", "Bromoform-175", "Isoprene-67", "Isoprene-68", "Isoprene-53", "notes"]
@@ -269,124 +295,29 @@ edna_mims_round['o2_bio'] = (edna_mims_round['O2:Ar'] / edna_mims_round['O2:Ar_s
 
 ## Plot [O2]bio
 
-trace1 = go.Scatter(
-    x = edna_mims_round.index,
-    y = edna_mims_round.loc[:, 'o2_bio'],
-    xaxis='x1',
-    yaxis='y1',
-    marker=go.scatter.Marker(
-        color='rgb(26, 118, 255)'
-    ),
-    line_shape='spline',
-    line_smoothing=0,
-    name = '[O2]bio'
-)
-
+trace1 = plot_trace(edna_mims_round, 'index', 'o2_bio', '[O2]bio')
 data = [trace1]
-
-layout = go.Layout(
-    plot_bgcolor='#f6f7f8',
-    paper_bgcolor='#f6f7f8',
-    title=go.layout.Title(
-        text='[O<sub>2</sub>]<sub>bio</sub>',
-        xref='paper',
-        font=dict(
-            family='Open Sans, sans-serif',
-            size=22, 
-            color='#000000'
-        )
-    ),
-    xaxis=go.layout.XAxis(
-        title=go.layout.xaxis.Title(
-            text='Date',
-            font=dict(
-                family='Open Sans, sans-serif',
-                size=18,
-                color='#000000'
-            )
-        )
-    ),
-    yaxis=go.layout.YAxis(
-        showexponent='all',
-        exponentformat='e',
-        title=go.layout.yaxis.Title(
-            text='[O<sub>2</sub>]<sub>bio</sub> (micromolar)',
-            font=dict(
-                family='Open Sans, sans-serif',
-                size=18,
-                color='#000000'
-            )
-        )
-    )
-)
-
+layout = plot_layout('[O<sub>2</sub>]<sub>bio</sub>', '[O<sub>2</sub>]<sub>bio</sub> (micromolar)')
 fig = go.Figure(data=data, layout=layout)
 pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 
 ## Create plots.
             
-for col in range(2, 18):
+for col in sort.columns[2:18]:
     
     ## filter outliers based on z-score
     
-    col_filter = np.abs(stats.zscore(sort.iloc[:,col], nan_policy = 'omit')) < 3
+    col_filter = np.abs(stats.zscore(sort.loc[:,col], nan_policy = 'omit')) < 3
     
     ## Limit to about a months worth of data.  If you load the full dataset
     ## the website loads pretty slow and the plots are difficult to work with.
     
     col_filter[0:-10000] = False
     
-    trace1 = go.Scatter(
-        x = sort['date_time'][col_filter],
-        y = sort.iloc[:, col][col_filter],
-        xaxis='x1',
-        yaxis='y1',
-        marker=go.scatter.Marker(
-            color='rgb(26, 118, 255)'
-        ),
-        line_shape='spline',
-        line_smoothing=0,
-    )
-
+    trace1 = plot_trace(sort, 'date_time', col, '', col_filter)
     data = [trace1]
-
-    layout = go.Layout(
-        plot_bgcolor='#f6f7f8',
-        paper_bgcolor='#f6f7f8',
-        title=go.layout.Title(
-            text=col_str[col],
-            xref='paper',
-            font=dict(
-                family='Open Sans, sans-serif',
-                size=22, 
-                color='#000000'
-            )
-        ),
-        xaxis=go.layout.XAxis(
-            title=go.layout.xaxis.Title(
-                text='Date',
-                font=dict(
-                    family='Open Sans, sans-serif',
-                    size=18,
-                    color='#000000'
-                )
-            )
-        ),
-        yaxis=go.layout.YAxis(
-            showexponent='all',
-            exponentformat='e',
-            title=go.layout.yaxis.Title(
-                text=col_str[col],
-                font=dict(
-                    family='Open Sans, sans-serif',
-                    size=18,
-                    color='#000000'
-                )
-            )
-        )
-    )
-
+    layout = plot_layout(col, col)
     fig = go.Figure(data=data, layout=layout)
-    pio.write_html(fig, file= 'ecoobs/' + col_str[col] + ".html", auto_open=False)
+    pio.write_html(fig, file= 'ecoobs/' + col + ".html", auto_open=False)
     
 frame.to_csv('MIMS_data_vol1.csv.gz')
