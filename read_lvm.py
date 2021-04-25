@@ -281,13 +281,20 @@ edna_log_df_round['date_time'] = edna_log_df_round.date_time.round('min')
 edna_log_df_round.drop_duplicates(subset = 'date_time', inplace = True)
 edna_log_df_round.index = edna_log_df_round.date_time
 
-sort_round = sort[['date_time', 'O2:Ar']]
+sort_round = sort[['date_time', 'O2:Ar', 'N2:Ar']]
 sort_round['date_time'] = sort.date_time.round('min')
 sort_round.drop_duplicates(subset = 'date_time', inplace = True)
 sort_round.index = sort_round.date_time
 
 edna_mims_round = pd.concat([edna_log_df_round, sort_round], axis = 1, join = 'inner')
 edna_mims_round.drop(columns = 'date_time', inplace = True)
+
+## Derive a column filter based on N2:Ar values which should only vary
+## during calibration or if something is very wrong.  Note that these do
+## actually vary over time, so probably you'll have to adjust this at some
+## point.
+
+edna_mims_round_col_filter = (edna_mims_round['N2:Ar'] > 11) & (edna_mims_round['N2:Ar'] < 13)
 
 ## O2 correction - correction factor derived from calibrations with aged water.
 ## This value is calculated as O2_cf = (O2*/Ar*)/(O2/Ar), where * are the theoretical
@@ -302,29 +309,32 @@ edna_mims_round['o2_bio'] = ((edna_mims_round['O2:Ar'] * O2_cf) / edna_mims_roun
 
 ## Plot [O2]bio
 
-trace1 = plot_trace(edna_mims_round, 'index', 'o2_bio', '[O2]bio')
+trace1 = plot_trace(edna_mims_round, 'index', 'o2_bio', '[O2]bio', edna_mims_round_col_filter)
 data = [trace1]
 layout = plot_layout('[O<sub>2</sub>]<sub>bio</sub>', '[O<sub>2</sub>]<sub>bio</sub> (micromolar)')
 fig = go.Figure(data=data, layout=layout)
 pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 
 ## Create plots.
+
+mims_col_filter = (sort['N2:Ar'] > 11) & (sort['N2:Ar'] < 13)
+mims_col_filter[0:-20000] = False
             
 for col in sort.columns[2:18]:
     
     ## filter outliers based on z-score
     
-    col_filter = np.abs(stats.zscore(sort.loc[:,col], nan_policy = 'omit')) < 3
+    #col_filter = np.abs(stats.zscore(sort.loc[:,col], nan_policy = 'omit')) < 3
     
     ## Limit to about a months worth of data.  If you load the full dataset
     ## the website loads pretty slow and the plots are difficult to work with.
     
-    col_filter[0:-10000] = False
+    #col_filter[0:-10000] = False
     
-    trace1 = plot_trace(sort, 'date_time', col, '', col_filter)
+    trace1 = plot_trace(sort, 'date_time', col, '', mims_col_filter)
     data = [trace1]
     layout = plot_layout(col, col)
     fig = go.Figure(data=data, layout=layout)
-    pio.write_html(fig, file= 'ecoobs/' + col + ".html", auto_open=False)
+    pio.write_html(fig, file= 'ecoobs/' + col.replace(':', '_') + ".html", auto_open=False)
     
 frame.to_csv('MIMS_data_vol1.csv.gz')
