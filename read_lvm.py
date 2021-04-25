@@ -289,9 +289,13 @@ sort_round.index = sort_round.date_time
 edna_mims_round = pd.concat([edna_log_df_round, sort_round], axis = 1, join = 'inner')
 edna_mims_round.drop(columns = 'date_time', inplace = True)
 
+## O2 correction - correction factor derived from calibrations with aged water
+
+O2_cf = 2.3
+
 ## calculate [O2]bio.  Units are umol L-1
 
-edna_mims_round['o2_bio'] = (edna_mims_round['O2:Ar'] / edna_mims_round['O2:Ar_sat'] - 1) * edna_mims_round['O2_sat']
+edna_mims_round['o2_bio'] = ((edna_mims_round['O2:Ar'] * O2_cf) / edna_mims_round['O2:Ar_sat'] - 1) * edna_mims_round['O2_sat']
 
 ## Plot [O2]bio
 
