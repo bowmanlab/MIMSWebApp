@@ -317,7 +317,7 @@ pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 
 ## Create plots.
 
-mims_col_filter = (sort['N2:Ar'] > 11) & (sort['N2:Ar'] < 13)
+mims_col_filter = (sort['N2:Ar'] > 8) & (sort['N2:Ar'] < 13)
 mims_col_filter[0:-20000] = False
             
 for col in sort.columns[2:18]:
