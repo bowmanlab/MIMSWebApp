@@ -6,6 +6,19 @@ import plotly.graph_objs as go
 import plotly.io as pio
 from scipy import stats
 
+#%%% Switch for transitioning between dev machine (windows) and production
+## machine (Linux)
+
+development = False
+
+if development == True:
+    path_mims = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data//'
+    path_edna = 'C://Users//jeff//Documents//bowman_lab//MIMS//Apps//Pier-Sampler-Data//'
+    
+else:  
+    path_mims = '/home/jeff/Dropbox/MIMS_Data/'  # use your path
+    path_edna = '/home/jeff/Dropbox/Apps/Pier-Sampler-Data/'  # use your path
+
 #%%% Functions
 
 ## Define function to calculate Ar at saturation based on Hamme and Emerson, 2004
@@ -124,19 +137,6 @@ def plot_trace(data, paramx, paramy, name, data_filter = None):
     )
     
     return(trace)
-
-## Switch for transitioning between dev machine (windows) and production
-## machine (Linux)
-
-development = False
-
-if development == True:
-    path_mims = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data//'
-    path_edna = 'C://Users//jeff//Documents//bowman_lab//MIMS//Apps//Pier-Sampler-Data//'
-    
-else:  
-    path_mims = '/home/jeff/Dropbox/MIMS_Data/'  # use your path
-    path_edna = '/home/jeff/Dropbox/Apps/Pier-Sampler-Data/'  # use your path
 
 lvm_files = glob.glob(path_mims + "*.lvm")
 edna_log_files = glob.glob(path_edna + 'PierSamplerData-*.log')
@@ -317,7 +317,7 @@ pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 
 ## Create plots.
 
-mims_col_filter = (sort['N2:Ar'] > 11) & (sort['N2:Ar'] < 13.5)
+mims_col_filter = (sort['N2:Ar'] > 11) & (sort['N2:Ar'] < 14)
 mims_col_filter[0:-20000] = False
             
 for col in sort.columns[2:18]:
