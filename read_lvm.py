@@ -294,7 +294,7 @@ edna_mims_round.drop(columns = 'date_time', inplace = True)
 ## actually vary over time, so probably you'll have to adjust this at some
 ## point.
 
-edna_mims_round_col_filter = (edna_mims_round['N2:Ar'] > 11) & (edna_mims_round['N2:Ar'] < 13)
+edna_mims_round_col_filter = (edna_mims_round['N2:Ar'] > 11) & (edna_mims_round['N2:Ar'] < 20)
 
 ## O2 correction - correction factor derived from calibrations with aged water.
 ## This value is calculated as O2_cf = (O2*/Ar*)/(O2/Ar), where * are the theoretical
