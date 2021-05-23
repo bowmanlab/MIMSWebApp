@@ -301,11 +301,14 @@ edna_mims_round_col_filter = (edna_mims_round['N2:Ar'] > 11) & (edna_mims_round[
 ## values at saturation, and the other values are the measured values at saturation.
 ## The O2_cf value given here is the mean of all values derived during calibrations.
 
-O2_cf = 2.24
+#O2_cf = 2.24 # prior to 20 May 2021, after this date 1.5
+
+edna_mims_round.loc[edna_mims_round.index < pd.to_datetime('2020-04-15 12:00:00'), 'O2_CF'] = 2.24
+edna_mims_round.loc[edna_mims_round.index >= pd.to_datetime('2020-04-15 12:00:00'), 'O2_CF'] = 1.5
 
 ## calculate [O2]bio.  Units are umol L-1
 
-edna_mims_round['o2_bio'] = ((edna_mims_round['O2:Ar'] * O2_cf) / edna_mims_round['O2:Ar_sat'] - 1) * edna_mims_round['O2_sat']
+edna_mims_round['o2_bio'] = ((edna_mims_round['O2:Ar'] * edna_mims_round['O2_CF']) / edna_mims_round['O2:Ar_sat'] - 1) * edna_mims_round['O2_sat']
 
 ## Plot [O2]bio
 
@@ -317,7 +320,7 @@ pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 
 ## Create plots.
 
-mims_col_filter = (sort['N2:Ar'] > 11) & (sort['N2:Ar'] < 14)
+mims_col_filter = (sort['N2:Ar'] > 11) & (sort['N2:Ar'] < 20)
 mims_col_filter[0:-20000] = False
             
 for col in sort.columns[2:18]:
