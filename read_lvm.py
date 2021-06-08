@@ -9,7 +9,7 @@ from scipy import stats
 #%%% Switch for transitioning between dev machine (windows) and production
 ## machine (Linux)
 
-development = False
+development = True
 
 if development == True:
     path_mims = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data//'
@@ -41,7 +41,7 @@ def Arsat(S, T):
     
     return(Ar)
 
-## Define function to calculate O2 at saturation based on Hamme and Emerson, 2004
+## Define function to calculate O2 at saturation based on Garcia and Gordon, 1992
 
 def O2sat(S, T):
     
