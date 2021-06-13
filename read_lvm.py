@@ -9,7 +9,7 @@ from scipy import stats
 #%%% Switch for transitioning between dev machine (windows) and production
 ## machine (Linux)
 
-development = True
+development = False
 
 if development == True:
     path_mims = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data//'
