@@ -10,6 +10,7 @@ from scipy import stats
 ## machine (Linux)
 
 development = False
+use_sccoos = True
 
 if development == True:
     path_mims = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data//'
@@ -142,6 +143,24 @@ lvm_files = glob.glob(path_mims + "*.lvm")
 edna_log_files = glob.glob(path_edna + 'PierSamplerData-*.log')
 edna_event_log_files = glob.glob(path_edna + 'PierSamplerEventLog-*.log')
 
+#%% SCCOOS temperature data
+
+## Note that SCCOOS temperature data is recorded in UTC 
+
+base = 'https://erddap.sccoos.org/erddap/tabledap/autoss.csv?station%2Ctime%2Ctemperature&station=%22scripps_pier%22&time%3E=2018-01-01&temperature_flagPrimary=1&orderBy(%22time%22)'
+sccoos_temp = pd.read_csv(base, skiprows = [1], index_col = 'time')
+
+## Unused code for just getting a single day
+    
+#current_time = pd.to_datetime('today').tz_localize('America/Los_Angeles').tz_convert('UTC')
+#current_day = current_time.strftime('%Y-%m-%d')
+
+#base = 'https://erddap.sccoos.org/erddap/tabledap/autoss.csv?station%2Ctime%2Ctemperature&station=%22scripps_pier%22&time%3E=' + current_day + '&temperature_flagPrimary=1&orderBy(%22time%22)'
+
+#sccoos_temp = pd.read_csv(base, skiprows = [1], index_col = 'time')
+
+sccoos_temp.index = pd.to_datetime(sccoos_temp.index, format = '%Y-%m-%dT%H:%M:%SZ')
+
 #%% eDNA sampler data 
 
 ## Iterate across all log files, parse, adding to list.
@@ -267,34 +286,57 @@ frame = pd.concat(li, axis=0, ignore_index=True)
 sort = frame.sort_values(by = 'date_time', ascending = True)
 sort.replace([np.inf, -np.inf], np.nan, inplace=True) 
 
-## Calculate %O2/%Ar at sat
+## Round SCCOOS to 5 minute intervals and calculate %O2/%Ar at sat
+
+sccoos_temp_round = sccoos_temp[['temperature']]
+sccoos_temp_round['date_time'] = sccoos_temp.index.round('5T')
+sccoos_temp_round.drop_duplicates(subset = 'date_time', inplace = True)
+sccoos_temp_round.index = sccoos_temp_round.date_time
+sccoos_temp_round.drop(columns = 'date_time', inplace = True)
+
+sccoos_temp_round['O2_sat'] = O2sat([33.5] * sccoos_temp_round.shape[0], sccoos_temp_round['temperature'])
+sccoos_temp_round['Ar_sat'] = Arsat([33.5] * sccoos_temp_round.shape[0], sccoos_temp_round['temperature'])
+sccoos_temp_round['O2:Ar_sat'] = sccoos_temp_round['O2_sat'] / sccoos_temp_round['Ar_sat']
+
+## Calculate %O2/%Ar at sat for eDNA sampler temps
 
 edna_log_df['O2_sat'] = O2sat([33.5] * edna_log_df.shape[0], edna_log_df['temp_1_min_mean'])
 edna_log_df['Ar_sat'] = Arsat([33.5] * edna_log_df.shape[0], edna_log_df['temp_1_min_mean'])
 edna_log_df['O2:Ar_sat'] = edna_log_df['O2_sat'] / edna_log_df['Ar_sat']
 
+if use_sccoos == True:
+    sort_round = sort[['date_time', 'O2:Ar', 'N2:Ar']]
+    sort_round['date_time'] = sort.date_time.round('5T')
+    sort_round.drop_duplicates(subset = 'date_time', inplace = True)
+    sort_round.index = sort_round.date_time
+    
+    edna_mims_round = pd.concat([sccoos_temp_round, sort_round], axis = 1, join = 'inner')
+    edna_mims_round.drop(columns = 'date_time', inplace = True)
+    
+else:
+
 ## It looks like the easiest way to join the MIMS and eDNA datasets is to round
 ## both to nearest minute, eliminate duplicates, and glue together.
 
-edna_log_df_round = edna_log_df[['date_time', 'O2_sat', 'O2:Ar_sat']]
-edna_log_df_round['date_time'] = edna_log_df_round.date_time.round('min')
-edna_log_df_round.drop_duplicates(subset = 'date_time', inplace = True)
-edna_log_df_round.index = edna_log_df_round.date_time
-
-sort_round = sort[['date_time', 'O2:Ar', 'N2:Ar']]
-sort_round['date_time'] = sort.date_time.round('min')
-sort_round.drop_duplicates(subset = 'date_time', inplace = True)
-sort_round.index = sort_round.date_time
-
-edna_mims_round = pd.concat([edna_log_df_round, sort_round], axis = 1, join = 'inner')
-edna_mims_round.drop(columns = 'date_time', inplace = True)
+    edna_log_df_round = edna_log_df[['date_time', 'O2_sat', 'O2:Ar_sat']]
+    edna_log_df_round['date_time'] = edna_log_df_round.date_time.round('min')
+    edna_log_df_round.drop_duplicates(subset = 'date_time', inplace = True)
+    edna_log_df_round.index = edna_log_df_round.date_time
+    
+    sort_round = sort[['date_time', 'O2:Ar', 'N2:Ar']]
+    sort_round['date_time'] = sort.date_time.round('min')
+    sort_round.drop_duplicates(subset = 'date_time', inplace = True)
+    sort_round.index = sort_round.date_time
+    
+    edna_mims_round = pd.concat([edna_log_df_round, sort_round], axis = 1, join = 'inner')
+    edna_mims_round.drop(columns = 'date_time', inplace = True)
 
 ## Derive a column filter based on N2:Ar values which should only vary
 ## during calibration or if something is very wrong.  Note that these do
 ## actually vary over time, so probably you'll have to adjust this at some
 ## point.
 
-edna_mims_round_col_filter = (edna_mims_round['N2:Ar'] > 11) & (edna_mims_round['N2:Ar'] < 20)
+edna_mims_round_col_filter = (edna_mims_round['N2:Ar'] > 11) & (edna_mims_round['N2:Ar'] < 20) & (edna_mims_round.index > pd.to_datetime('2021-01-01', format = '%Y-%m-%d', exact = True))
 
 ## O2 correction - correction factor derived from calibrations with aged water.
 ## This value is calculated as O2_cf = (O2*/Ar*)/(O2/Ar), where * are the theoretical
@@ -318,7 +360,9 @@ layout = plot_layout('[O<sub>2</sub>]<sub>bio</sub>', '[O<sub>2</sub>]<sub>bio</
 fig = go.Figure(data=data, layout=layout)
 pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 
-## Create plots.
+#%% Create plots.
+
+## SCCOOS results in fewer datapoints because the temperature time steps are coarser.
 
 mims_col_filter = (sort['N2:Ar'] > 11) & (sort['N2:Ar'] < 20)
 mims_col_filter[0:-20000] = False
