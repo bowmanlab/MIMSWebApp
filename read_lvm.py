@@ -345,7 +345,8 @@ edna_mims_round_col_filter = (edna_mims_round['N2:Ar'] > 11) & (edna_mims_round[
 
 #O2_cf = 2.24 # prior to 20 May 2021, after this date 1.5
 
-edna_mims_round.loc[edna_mims_round.index < pd.to_datetime('2021-05-20 12:00:00'), 'O2_CF'] = 2.24
+edna_mims_round.loc[edna_mims_round.index < pd.to_datetime('2021-03-26 12:00:00'), 'O2_CF'] = 1.44 # New inlet after 26 March
+edna_mims_round.loc[(edna_mims_round.index >= pd.to_datetime('2021-03-26 12:00:00')) & (edna_mims_round.index < pd.to_datetime('2021-05-20 12:00:00')), 'O2_CF'] = 2.24
 edna_mims_round.loc[edna_mims_round.index >= pd.to_datetime('2021-05-20 12:00:00'), 'O2_CF'] = 1.5
 
 ## calculate [O2]bio.  Units are umol L-1
@@ -385,3 +386,4 @@ for col in sort.columns[2:18]:
     pio.write_html(fig, file= 'ecoobs/' + col.replace(':', '_') + ".html", auto_open=False)
     
 frame.to_csv('MIMS_data_vol1.csv.gz')
+edna_mims_round.to_csv('o2bio.csv')
