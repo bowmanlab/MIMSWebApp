@@ -336,7 +336,7 @@ else:
 ## actually vary over time, so probably you'll have to adjust this at some
 ## point.
 
-edna_mims_round_col_filter = (edna_mims_round['N2:Ar'] > 11) & (edna_mims_round['N2:Ar'] < 20) & (edna_mims_round.index > pd.to_datetime('2021-01-01', format = '%Y-%m-%d', exact = True))
+edna_mims_round_col_filter = (edna_mims_round['N2:Ar'] > 9) & (edna_mims_round['N2:Ar'] < 20) & (edna_mims_round.index > pd.to_datetime('2021-01-01', format = '%Y-%m-%d', exact = True))
 
 ## O2 correction - correction factor derived from calibrations with aged water.
 ## This value is calculated as O2_cf = (O2*/Ar*)/(O2/Ar), where * are the theoretical
@@ -366,7 +366,7 @@ pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 
 ## SCCOOS results in fewer datapoints because the temperature time steps are coarser.
 
-mims_col_filter = (sort['N2:Ar'] > 11) & (sort['N2:Ar'] < 20)
+mims_col_filter = (sort['N2:Ar'] > 9) & (sort['N2:Ar'] < 20)
 mims_col_filter[0:-20000] = False
             
 for col in sort.columns[2:18]:
