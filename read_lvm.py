@@ -305,7 +305,7 @@ edna_log_df['Ar_sat'] = Arsat([33.5] * edna_log_df.shape[0], edna_log_df['temp_1
 edna_log_df['O2:Ar_sat'] = edna_log_df['O2_sat'] / edna_log_df['Ar_sat']
 
 if use_sccoos == True:
-    sort_round = sort[['date_time', 'O2:Ar', 'N2:Ar']]
+    sort_round = sort[['date_time', 'O2', 'O2:Ar', 'N2:Ar']]
     sort_round['date_time'] = sort.date_time.round('5T')
     sort_round.drop_duplicates(subset = 'date_time', inplace = True)
     sort_round.index = sort_round.date_time
