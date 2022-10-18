@@ -10,7 +10,7 @@ import os
 #%%% Switch for transitioning between dev machine (windows) and production
 ## machine (Linux)
 
-development = True
+development = False
 use_sccoos = True
 
 if development == True:
