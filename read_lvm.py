@@ -164,7 +164,7 @@ sccoos_temp.index = pd.to_datetime(sccoos_temp.index, format = '%Y-%m-%dT%H:%M:%
 
 #%% MIMS data
 
-col_str = ["time", "ms", "O2", "Ar", "Inlet_T", "pressure"]
+col_str = ["time", "ms", "O2", "Ar", "Inlet Temperature", "pressure"]
 
 ## Iterate across all csv files parse, adding to list.
 
@@ -273,7 +273,7 @@ pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 mims_col_filter = (sort['N2:Ar'] > 9) & (sort['N2:Ar'] < 20)
 mims_col_filter[0:-20000] = False
             
-for col in sort.columns[2:18]:
+for col in ['O2', 'Ar', 'Inlet_T', 'pressure', 'N2','O2:Ar', 'N2:Ar']:
     
     ## filter outliers based on z-score
     
