@@ -10,7 +10,7 @@ import os
 #%%% Switch for transitioning between dev machine (windows) and production
 ## machine (Linux)
 
-development = False
+development = True
 use_sccoos = True
 
 if development == True:
@@ -18,7 +18,7 @@ if development == True:
     path_edna = 'C://Users//jeff//Documents//bowman_lab//MIMS//Apps//Pier-Sampler-Data//'
     
 else:  
-    path_mims = '/home/jeff/Dropbox/MIMS_Data/'  # use your path
+    path_mims = '/home/jeff/Dropbox/MIMS_Data_v3/'  # use your path
     path_edna = '/home/jeff/Dropbox/Apps/Pier-Sampler-Data/'  # use your path
 
 #%%% Functions
