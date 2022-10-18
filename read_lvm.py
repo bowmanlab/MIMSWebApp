@@ -6,6 +6,7 @@ import plotly.graph_objs as go
 import plotly.io as pio
 from scipy import stats
 import os
+from datetime import datetime, timedelta
 
 #%%% Switch for transitioning between dev machine (windows) and production
 ## machine (Linux)
@@ -164,7 +165,7 @@ sccoos_temp.index = pd.to_datetime(sccoos_temp.index, format = '%Y-%m-%dT%H:%M:%
 
 #%% MIMS data
 
-col_str = ["time", "ms", "O2", "Ar", "Inlet Temperature", "pressure"]
+col_str = ["time", "ms", "N2", "O2", "Ar", "Inlet Temperature", "pressure"]
 
 ## Iterate across all csv files parse, adding to list.
 
@@ -172,14 +173,32 @@ li = []
 
 for filename in csv_files:
     
+    with open(filename, 'r') as file_in:
+        for line in file_in.readlines():
+            if line.startswith('\"Date\"'):
+                line = line.strip()
+                line = line.split(',')
+                date = line[1]
+                time = line[3]
+                date_time_0 = ' '.join([date, time])
+                date_time_0 = pd.to_datetime(date_time_0, format = '%m/%d/%Y %I:%M:%S %p')
+                break
+                                
     if development == True:
         base_name = filename.split('\\')[-1]
     else:
         base_name = filename.split('/')[-1]
     
-    df = pd.read_csv(filename, skiprows=25, header=0, names = col_str, index_col = False)
-    df['time'] = pd.to_datetime(df['time'], format = '%m/%d/%Y %I:%M:%S %p', exact = True)
+    df = pd.read_csv(filename, skiprows=27, header=0, names = col_str, index_col = False)
+    df['elapsed_time'] = df['time']
+    
+    for index, row in df.iterrows():
+        time_delta = list(map(int, row['time'].split(':')))
+        df.loc[index, 'time'] = date_time_0 + timedelta(hours = time_delta[0], minutes = time_delta[1], seconds = time_delta[2])
+
+    #df['time'] = pd.to_datetime(df['time'], format = '%m/%d/%Y %I:%M:%S %p', exact = True)
     df['source_file'] = base_name
+    df['start_time'] = date_time_0
       
     li.append(df)
     
@@ -188,12 +207,8 @@ for filename in csv_files:
 frame = pd.concat(li, axis=0, ignore_index=True)
 sort = frame.sort_values(by = 'time', ascending = True)
 sort.replace([np.inf, -np.inf], np.nan, inplace=True) 
-sort['N2'] = sort['Ar'] * 15 ## place holder!!!
 sort['O2:Ar'] = sort['O2']/sort['Ar']
 sort['N2:Ar'] = sort['N2']/sort['Ar']
-
-#!!! currently N2 not being output.  Need to insure in instructions that
-## column order is important in output
 
 ## Round SCCOOS to 5 minute intervals and calculate %O2/%Ar at sat
 
@@ -270,8 +285,9 @@ pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 
 ## SCCOOS results in fewer datapoints because the temperature time steps are coarser.
 
-mims_col_filter = (sort['N2:Ar'] > 9) & (sort['N2:Ar'] < 20)
-mims_col_filter[0:-20000] = False
+mims_col_filter = sort['N2:Ar'] > 0
+#mims_col_filter = (sort['N2:Ar'] > 9) & (sort['N2:Ar'] < 20)
+#mims_col_filter[0:-20000] = False
             
 for col in ['O2', 'Ar', 'Inlet Temperature', 'pressure', 'N2','O2:Ar', 'N2:Ar']:
     
