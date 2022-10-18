@@ -273,7 +273,7 @@ pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 mims_col_filter = (sort['N2:Ar'] > 9) & (sort['N2:Ar'] < 20)
 mims_col_filter[0:-20000] = False
             
-for col in ['O2', 'Ar', 'Inlet_T', 'pressure', 'N2','O2:Ar', 'N2:Ar']:
+for col in ['O2', 'Ar', 'Inlet Temperature', 'pressure', 'N2','O2:Ar', 'N2:Ar']:
     
     ## filter outliers based on z-score
     
