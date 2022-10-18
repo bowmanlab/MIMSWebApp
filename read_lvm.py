@@ -5,6 +5,7 @@ import glob
 import plotly.graph_objs as go
 import plotly.io as pio
 from scipy import stats
+import os
 
 #%%% Switch for transitioning between dev machine (windows) and production
 ## machine (Linux)
@@ -139,7 +140,7 @@ def plot_trace(data, paramx, paramy, name, data_filter = None):
     
     return(trace)
 
-lvm_files = glob.glob(path_mims + "*.lvm")
+csv_files = glob.glob(path_mims + "*.csv")
 edna_log_files = glob.glob(path_edna + 'PierSamplerData-*.log')
 edna_event_log_files = glob.glob(path_edna + 'PierSamplerEventLog-*.log')
 
@@ -161,130 +162,38 @@ sccoos_temp = pd.read_csv(base, skiprows = [1], index_col = 'time')
 
 sccoos_temp.index = pd.to_datetime(sccoos_temp.index, format = '%Y-%m-%dT%H:%M:%SZ')
 
-#%% eDNA sampler data 
-
-## Iterate across all log files, parse, adding to list.
-
-edna_logs = []
-
-for log in edna_log_files:
-    edna_logs_cols = ['date', 'time', 'epoch', 'temp_1_min_mean', 'temp_1_day_mean', 'flow_meter_count', 'flow_meter_hz', 'flow_L_min']
-    df = pd.read_csv(log, names = edna_logs_cols, delim_whitespace = True, index_col = False)
-    df['date_time'] = df['date'] + ' ' + df['time']
-    df['date_time'] = pd.to_datetime(df['date_time'], format = '%Y-%m-%d %H:%M:%S', exact = True)
-    
-    edna_logs.append(df)
-    
-edna_log_df = pd.concat(edna_logs, axis=0, ignore_index = True)
-edna_log_df.sort_values(by = 'date_time', ascending = True, inplace = True)
-
-df = ''
-
-edna_event_logs = []
-
-for log in edna_event_log_files:
-    edna_event_logs_cols = ['date', 'time', 'epoch', 'temp_1_sec_mean', 'temp_1_min_mean', 'temp_1_day_mean','flow_meter_count', 'flow_meter_hz', 'flow_L_min', 'filter_number']
-    df = pd.read_csv(log, names = edna_event_logs_cols, delim_whitespace = True, index_col = False)
-    df['date_time'] = df['date'] + ' ' + df['time']
-    df['date_time'] = pd.to_datetime(df['date_time'], format = '%Y-%m-%d %H:%M:%S', exact = True)
-    
-    edna_event_logs.append(df)
-    
-edna_event_log_df = pd.concat(edna_event_logs, axis=0, ignore_index = True)
-edna_event_log_df.sort_values(by = 'date_time', ascending = True, inplace = True)
-
-## plot ##
-
-trace1 = plot_trace(edna_log_df, 'date_time', 'temp_1_min_mean', 'Temperature')
-
-edna_colors = ['#fbdad8', '#f6b6b0', '#f29189', '#ed6d61', '#e94b3c', '#e6301f', '#d12717', '#9d1d11', '#e6e93c']
-
-trace2 = go.Scatter(
-    x = edna_event_log_df['date_time'],
-    y = edna_event_log_df.loc[:, 'temp_1_min_mean'],
-    xaxis='x1',
-    yaxis='y1',
-    mode='markers',
-    marker=dict(size=20, color = [edna_colors[x - 1] for x in edna_event_log_df.filter_number.tolist()]),
-    name = 'eDNA sample'
-)
-
-data = [trace1, trace2]
-layout = plot_layout('In situ temperature', 'In situ temperature')
-fig = go.Figure(data=data, layout=layout)
-
-fig.update_layout(legend_font = dict(
-                family='Open Sans, sans-serif',
-                size=18,
-                color='#000000'),
-    legend=dict(
-        yanchor = 'top',
-        xanchor = 'left',
-        y = 0.99,
-        x = 0.01)
-)
-
-pio.write_html(fig, file= 'ecoobs/' + 'In situ temperature' + ".html", auto_open=False)
-
 #%% MIMS data
 
-col_str = ["Empty", "Julian-Date", "Inlet Temperature", "Water", "N2", "O2", "Ar", "O2:Ar", "N2:Ar", "Total", "DMS-62",
-           "DMS-47", "Bromoform-173", "Bromoform-171", "Bromoform-175", "Isoprene-67", "Isoprene-68", "Isoprene-53", "notes"]
+col_str = ["time", "ms", "O2", "Ar", "Inlet_T", "pressure"]
 
-## Iterate across all lvm files parse, adding to list.
+## Iterate across all csv files parse, adding to list.
 
 li = []
 
-for filename in lvm_files:
+for filename in csv_files:
     
     if development == True:
         base_name = filename.split('\\')[-1]
     else:
         base_name = filename.split('/')[-1]
-
-    year = base_name.split('_')[0][0:4]
     
-    df = pd.read_csv(filename, sep='\t', skiprows=21, header=0, names = col_str, index_col = False)
-    df['year'] = year
+    df = pd.read_csv(filename, skiprows=25, header=0, names = col_str, index_col = False)
+    df['time'] = pd.to_datetime(df['time'], format = '%m/%d/%Y %I:%M:%S %p', exact = True)
     df['source_file'] = base_name
-    
-    ## need to define hours, minutes, seconds independently here
-    
-    temp_time = pd.DataFrame(columns = ['day', 'day_decimal', 'hour', 'hour_decimal', 'minute', 'minute_decimal', 'seconds'])
-    
-    temp_time['day_decimal'] = df['Julian-Date']
-    temp_time['day'] = temp_time['day_decimal'].apply(np.floor)
-    temp_time['day_decimal'] = temp_time['day_decimal'] - temp_time['day']
-    
-    temp_time['hour_decimal'] = 24 * temp_time['day_decimal']
-    temp_time['hour'] = temp_time['hour_decimal'].apply(np.floor)
-    temp_time['hour_decimal'] = temp_time['hour_decimal'] - temp_time['hour']
-    
-    temp_time['minute_decimal'] = 60 * temp_time['hour_decimal']
-    temp_time['minute'] = temp_time['minute_decimal'].apply(np.floor)
-    temp_time['minute_decimal'] = temp_time['minute_decimal'] - temp_time['minute']
-    
-    temp_time['seconds'] = 60 * temp_time['minute_decimal'].astype(float)
-    
-    temp_time['date_time'] = year + '-' + temp_time['day'].astype(int).astype(str) + '-' + temp_time['hour'].astype(int).astype(str) + '-' + temp_time['minute'].astype(int).astype(str) + '-' + temp_time['seconds'].round(0).astype(int).astype(str)
-        
-    df['day'] = temp_time['day']
-    df['date_time'] = pd.to_datetime(temp_time['date_time'], format = '%Y-%j-%H-%M-%S', exact = True)
-    
-    ## For reasons that aren't clear the last measurement of 2020 ends up in
-    ## 2021 file.  This then shows up as day 366 for 2021.  Easiest way to deal
-    ## with it is to just delete this measurement.
-    
-    if year == '2021':
-        df.drop(df[df.day == 366].index, inplace = True)
-    
+      
     li.append(df)
     
 ## Concatenate individual dataframes to master frame and sort by date.
 
 frame = pd.concat(li, axis=0, ignore_index=True)
-sort = frame.sort_values(by = 'date_time', ascending = True)
+sort = frame.sort_values(by = 'time', ascending = True)
 sort.replace([np.inf, -np.inf], np.nan, inplace=True) 
+sort['N2'] = sort['Ar'] * 15 ## place holder!!!
+sort['O2:Ar'] = sort['O2']/sort['Ar']
+sort['N2:Ar'] = sort['N2']/sort['Ar']
+
+#!!! currently N2 not being output.  Need to insure in instructions that
+## column order is important in output
 
 ## Round SCCOOS to 5 minute intervals and calculate %O2/%Ar at sat
 
@@ -298,25 +207,19 @@ sccoos_temp_round['O2_sat'] = O2sat([33.5] * sccoos_temp_round.shape[0], sccoos_
 sccoos_temp_round['Ar_sat'] = Arsat([33.5] * sccoos_temp_round.shape[0], sccoos_temp_round['temperature'])
 sccoos_temp_round['O2:Ar_sat'] = sccoos_temp_round['O2_sat'] / sccoos_temp_round['Ar_sat']
 
-## Calculate %O2/%Ar at sat for eDNA sampler temps
-
-edna_log_df['O2_sat'] = O2sat([33.5] * edna_log_df.shape[0], edna_log_df['temp_1_min_mean'])
-edna_log_df['Ar_sat'] = Arsat([33.5] * edna_log_df.shape[0], edna_log_df['temp_1_min_mean'])
-edna_log_df['O2:Ar_sat'] = edna_log_df['O2_sat'] / edna_log_df['Ar_sat']
-
 if use_sccoos == True:
-    sort_round = sort[['date_time', 'O2', 'O2:Ar', 'N2:Ar']]
-    sort_round['date_time'] = sort.date_time.round('5T')
-    sort_round.drop_duplicates(subset = 'date_time', inplace = True)
-    sort_round.index = sort_round.date_time
+    sort_round = sort[['time', 'O2', 'O2:Ar', 'N2:Ar']]
+    sort_round.loc['time'] = sort.time.round('5T')
+    sort_round = sort_round.groupby(sort_round.time).mean()
     
     edna_mims_round = pd.concat([sccoos_temp_round, sort_round], axis = 1, join = 'inner')
-    edna_mims_round.drop(columns = 'date_time', inplace = True)
     
 else:
 
 ## It looks like the easiest way to join the MIMS and eDNA datasets is to round
 ## both to nearest minute, eliminate duplicates, and glue together.
+    
+#!!! Currently this block is not in use, as only applies if SCCOOS is not being used for T data.
 
     edna_log_df_round = edna_log_df[['date_time', 'O2_sat', 'O2:Ar_sat']]
     edna_log_df_round['date_time'] = edna_log_df_round.date_time.round('min')
@@ -359,7 +262,7 @@ edna_mims_round['o2_bio'] = ((edna_mims_round['O2:Ar'] * edna_mims_round['O2_CF'
 
 trace1 = plot_trace(edna_mims_round, 'index', 'o2_bio', '[O2]bio', edna_mims_round_col_filter)
 data = [trace1]
-layout = plot_layout('[O<sub>2</sub>]<sub>bio</sub>', '[O<sub>2</sub>]<sub>bio</sub> (micromolar)')
+layout = plot_layout('[O<sub>2</sub>]<sub>bio</sub> - TESTING', '[O<sub>2</sub>]<sub>bio</sub> (micromolar)') ## Testing in plot title.
 fig = go.Figure(data=data, layout=layout)
 pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 
@@ -381,11 +284,11 @@ for col in sort.columns[2:18]:
     
     #col_filter[0:-10000] = False
     
-    trace1 = plot_trace(sort, 'date_time', col, '', mims_col_filter)
+    trace1 = plot_trace(sort, 'time', col, '', mims_col_filter)
     data = [trace1]
-    layout = plot_layout(col, col)
+    layout = plot_layout(col + ' - TESTING', col) ## Testing in plot title.
     fig = go.Figure(data=data, layout=layout)
     pio.write_html(fig, file= 'ecoobs/' + col.replace(':', '_') + ".html", auto_open=False)
     
-frame.to_csv('MIMS_data_vol1.csv.gz')
-edna_mims_round.to_csv('o2bio.csv')
+frame.to_csv('MIMS_data_vol2_test.csv.gz')
+edna_mims_round.to_csv('o2bio_test.csv')
