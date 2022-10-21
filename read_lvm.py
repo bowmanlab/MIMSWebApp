@@ -227,9 +227,10 @@ sccoos_temp_round['Ar_sat'] = Arsat([33.5] * sccoos_temp_round.shape[0], sccoos_
 sccoos_temp_round['O2:Ar_sat'] = sccoos_temp_round['O2_sat'] / sccoos_temp_round['Ar_sat']
 
 if use_sccoos == True:
-    sort_round = sort[['time', 'O2', 'O2:Ar', 'N2:Ar']]
-    sort_round.loc['time'] = sort.time.round('5T')
-    sort_round = sort_round.groupby(sort_round.time).mean()
+    sort_round = sort[['O2', 'O2:Ar', 'N2:Ar']]
+    sort_round.index = sort.time
+    sort_round['date_time'] = sort_round.index.round('5T')
+    sort_round = sort_round.groupby(sort_round.date_time).mean()
     
     edna_mims_round = pd.concat([sccoos_temp_round, sort_round], axis = 1, join = 'inner')
     
