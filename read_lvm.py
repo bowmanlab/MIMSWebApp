@@ -152,7 +152,8 @@ edna_event_log_files = glob.glob(path_edna + 'PierSamplerEventLog-*.log')
 
 ## Note that SCCOOS temperature data is recorded in UTC 
 
-base = 'https://erddap.sccoos.org/erddap/tabledap/autoss.csv?station%2Ctime%2Ctemperature&station=%22scripps_pier%22&time%3E=2018-01-01&temperature_flagPrimary=1&orderBy(%22time%22)'
+#base = 'https://erddap.sccoos.org/erddap/tabledap/autoss.csv?station%2Ctime%2Ctemperature&station=%22scripps_pier%22&time%3E=2018-01-01&temperature_flagPrimary=1&orderBy(%22time%22)'
+base = 'https://erddap.sensors.axds.co/erddap/tabledap/scripps-pier-automated-shore-sta.csv?time%2Csea_water_temperature%2Csea_water_temperature_qc_agg%2Cstation&time%3C=2018-01-01T00%3A00%3A00Z'
 sccoos_temp = pd.read_csv(base, skiprows = [1], index_col = 'time')
 
 ## Unused code for just getting a single day
@@ -215,14 +216,14 @@ sort['N2:Ar'] = sort['N2']/sort['Ar']
 
 ## Round SCCOOS to 5 minute intervals and calculate %O2/%Ar at sat
 
-sccoos_temp_round = sccoos_temp[['temperature']]
+sccoos_temp_round = sccoos_temp[['sea_water_temperature']]
 sccoos_temp_round['date_time'] = sccoos_temp.index.round('5T')
 sccoos_temp_round.drop_duplicates(subset = 'date_time', inplace = True)
 sccoos_temp_round.index = sccoos_temp_round.date_time
 sccoos_temp_round.drop(columns = 'date_time', inplace = True)
 
-sccoos_temp_round['O2_sat'] = O2sat([33.5] * sccoos_temp_round.shape[0], sccoos_temp_round['temperature'])
-sccoos_temp_round['Ar_sat'] = Arsat([33.5] * sccoos_temp_round.shape[0], sccoos_temp_round['temperature'])
+sccoos_temp_round['O2_sat'] = O2sat([33.5] * sccoos_temp_round.shape[0], sccoos_temp_round['sea_water_temperature'])
+sccoos_temp_round['Ar_sat'] = Arsat([33.5] * sccoos_temp_round.shape[0], sccoos_temp_round['sea_water_temperature'])
 sccoos_temp_round['O2:Ar_sat'] = sccoos_temp_round['O2_sat'] / sccoos_temp_round['Ar_sat']
 
 if use_sccoos == True:
