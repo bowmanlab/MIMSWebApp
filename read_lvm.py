@@ -8,6 +8,9 @@ from scipy import stats
 import os
 from datetime import datetime, timedelta
 
+#!!! To do: mv the files out of Dropbox to harddrive at some frequency.  Skip calibration files.  Don't
+## hard code header length.
+
 #%%% Switch for transitioning between dev machine (windows) and production
 ## machine (Linux)
 
@@ -165,7 +168,7 @@ sccoos_temp.index = pd.to_datetime(sccoos_temp.index, format = '%Y-%m-%dT%H:%M:%
 
 #%% MIMS data
 
-col_str = ["time", "ms", "N2", "O2", "Ar", "Inlet Temperature", "Vacuum Pressure"]
+col_str = ["time", "ms", "Water", "N2", "O2", "Ar", "Inlet Temperature", "Vacuum Pressure"]
 
 ## Iterate across all csv files parse, adding to list.
 
@@ -189,7 +192,7 @@ for filename in csv_files:
     else:
         base_name = filename.split('/')[-1]
     
-    df = pd.read_csv(filename, skiprows=27, header=0, names = col_str, index_col = False)
+    df = pd.read_csv(filename, skiprows=30, header=0, names = col_str, index_col = False)
     df['elapsed_time'] = df['time']
     
     for index, row in df.iterrows():
@@ -290,7 +293,7 @@ mims_col_filter = sort['N2:Ar'] > 0
 #mims_col_filter = (sort['N2:Ar'] > 9) & (sort['N2:Ar'] < 20)
 #mims_col_filter[0:-20000] = False
             
-for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N2:Ar']:
+for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N2:Ar', 'Water']:
     
     ## filter outliers based on z-score
     
