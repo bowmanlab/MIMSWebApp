@@ -153,7 +153,7 @@ edna_event_log_files = glob.glob(path_edna + 'PierSamplerEventLog-*.log')
 ## Note that SCCOOS temperature data is recorded in UTC 
 
 #base = 'https://erddap.sccoos.org/erddap/tabledap/autoss.csv?station%2Ctime%2Ctemperature&station=%22scripps_pier%22&time%3E=2018-01-01&temperature_flagPrimary=1&orderBy(%22time%22)'
-base = 'https://erddap.sensors.axds.co/erddap/tabledap/scripps-pier-automated-shore-sta.csv?time%2Csea_water_temperature%2Csea_water_temperature_qc_agg%2Cstation&time%3C=2018-01-01T00%3A00%3A00Z'
+base = 'https://erddap.sensors.axds.co/erddap/tabledap/scripps-pier-automated-shore-sta.csv?time%2Csea_water_temperature%2Csea_water_temperature_qc_agg%2Cstation&time%3E=2018-01-01T00%3A00%3A00Z'
 sccoos_temp = pd.read_csv(base, skiprows = [1], index_col = 'time')
 
 ## Unused code for just getting a single day
