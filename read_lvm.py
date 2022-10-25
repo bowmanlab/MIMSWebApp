@@ -312,5 +312,5 @@ for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N
     fig = go.Figure(data=data, layout=layout)
     pio.write_html(fig, file= 'ecoobs/' + col.replace(':', '_') + ".html", auto_open=False)
     
-frame.to_csv('MIMS_data_vol2_test.csv.gz')
-edna_mims_round.to_csv('o2bio_test.csv')
+frame.to_csv('MIMS_data_vol2.csv.gz')
+edna_mims_round.to_csv('o2bio_vol2.csv')
