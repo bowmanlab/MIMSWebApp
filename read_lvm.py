@@ -274,6 +274,8 @@ edna_mims_round.loc[(edna_mims_round.index >= pd.to_datetime('2021-03-26 12:00:0
 edna_mims_round.loc[(edna_mims_round.index >= pd.to_datetime('2021-05-20 12:00:00')) & (edna_mims_round.index < pd.to_datetime('2021-08-6 12:00:00')), 'O2_CF'] = 1.5
 edna_mims_round.loc[edna_mims_round.index >= pd.to_datetime('2021-08-6 12:00:00'), 'O2_CF'] = 2.0
 edna_mims_round.loc[edna_mims_round.index >= pd.to_datetime('2022-02-12 12:00:00'), 'O2_CF'] = 1.54
+edna_mims_round.loc[edna_mims_round.index >= pd.to_datetime('2022-11-17 12:00:00'), 'O2_CF'] = 1.76
+edna_mims_round.loc[edna_mims_round.index >= pd.to_datetime('2023-01-23 12:00:00'), 'O2_CF'] = 2.0
 
 ## calculate [O2]bio.  Units are umol L-1
 
