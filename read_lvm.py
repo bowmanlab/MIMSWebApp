@@ -17,7 +17,7 @@ development = False
 use_sccoos = True
 
 if development == True:
-    path_mims = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data//'
+    path_mims = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data_v3//'
     path_edna = 'C://Users//jeff//Documents//bowman_lab//MIMS//Apps//Pier-Sampler-Data//'
     
 else:  
@@ -192,19 +192,25 @@ for filename in csv_files:
         base_name = filename.split('\\')[-1]
     else:
         base_name = filename.split('/')[-1]
+        
+    ## Try clause added because Massoft occasionally starts exporting wrong number of columns
+    ## and this needs to be fixed manually.
     
-    df = pd.read_csv(filename, skiprows=30, header=0, names = col_str, index_col = False)
-    df['elapsed_time'] = df['time']
+    try:
+        df = pd.read_csv(filename, skiprows=30, header=0, names = col_str, index_col = False)
+        df['elapsed_time'] = df['time']
+        
+        for index, row in df.iterrows():
+            time_delta = list(map(int, row['time'].split(':')))
+            df.loc[index, 'time'] = date_time_0 + timedelta(hours = time_delta[0], minutes = time_delta[1], seconds = time_delta[2])
     
-    for index, row in df.iterrows():
-        time_delta = list(map(int, row['time'].split(':')))
-        df.loc[index, 'time'] = date_time_0 + timedelta(hours = time_delta[0], minutes = time_delta[1], seconds = time_delta[2])
-
-    #df['time'] = pd.to_datetime(df['time'], format = '%m/%d/%Y %I:%M:%S %p', exact = True)
-    df['source_file'] = base_name
-    df['start_time'] = date_time_0
-      
-    li.append(df)
+        #df['time'] = pd.to_datetime(df['time'], format = '%m/%d/%Y %I:%M:%S %p', exact = True)
+        df['source_file'] = base_name
+        df['start_time'] = date_time_0
+          
+        li.append(df)
+    except pd.errors.ParserError:
+        continue
     
 ## Concatenate individual dataframes to master frame and sort by date.
 
