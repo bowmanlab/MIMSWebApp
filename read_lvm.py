@@ -6,6 +6,7 @@ import plotly.io as pio
 from scipy import stats
 import os
 from datetime import datetime, timedelta
+import shutil
 
 #!!! To do: mv the files out of Dropbox to harddrive at some frequency.  Skip calibration files.  Don't
 ## hard code header length.
@@ -19,10 +20,18 @@ use_sccoos = True
 if development == True:
     path_mims = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data_v3//'
     path_edna = 'C://Users//jeff//Documents//bowman_lab//MIMS//Apps//Pier-Sampler-Data//'
+    data_store = 'C://Users//jeff//Documents//bowman_lab//MIMS//data_store//'
     
 else:  
     path_mims = '/home/jeff/Dropbox/MIMS_Data_v3/'  # use your path
     path_edna = '/home/jeff/Dropbox/Apps/Pier-Sampler-Data/'  # use your path
+    data_store = '/home/jeff/data_store/'
+    
+## Older MS data files will be moved to data_store. Create the directory if
+## not present.
+    
+if not os.path.isdir(data_store):
+    os.makedirs(data_store)
 
 #%%% Functions
 
@@ -173,7 +182,9 @@ col_str = ["time", "ms", "Water", "N2", "O2", "Ar", "Inlet Temperature", "Vacuum
 
 ## Iterate across all csv files parse, adding to list.
 
-li = []
+old_frame = pd.read_csv('MIMS_data_vol2.csv.gz')
+old_frame['time'] = pd.to_datetime(old_frame['time'], format = '%Y-%m-%d %H:%M:%S')
+li = [old_frame]
 
 for filename in csv_files:
     
@@ -209,6 +220,7 @@ for filename in csv_files:
         df['start_time'] = date_time_0
           
         li.append(df)
+        
     except pd.errors.ParserError:
         continue
     
@@ -319,6 +331,11 @@ for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N
     layout = plot_layout(col + ' - TESTING', col) ## Testing in plot title.
     fig = go.Figure(data=data, layout=layout)
     pio.write_html(fig, file= 'ecoobs/' + col.replace(':', '_') + ".html", auto_open=False)
-    
+   
 frame.to_csv('MIMS_data_vol2.csv.gz')
 edna_mims_round.to_csv('o2bio_vol2.csv')
+
+## Clean the dropbox folder
+
+for f in os.listdir(path_mims):
+    shutil.move(path_mims + f, data_store + f)
