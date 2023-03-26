@@ -190,26 +190,28 @@ li = [old_frame]
 
 for filename in csv_files:
     
-    with open(filename, 'r') as file_in:
-        for line in file_in.readlines():
-            if line.startswith('\"Date\"'):
-                line = line.strip()
-                line = line.split(',')
-                date = line[1]
-                time = line[3]
-                date_time_0 = ' '.join([date, time])
-                date_time_0 = pd.to_datetime(date_time_0, format = '%m/%d/%Y %I:%M:%S %p')
-                break
-                                
-    if development == True:
-        base_name = filename.split('\\')[-1]
-    else:
-        base_name = filename.split('/')[-1]
-        
     ## Try clause added because Massoft occasionally starts exporting wrong number of columns
-    ## and this needs to be fixed manually.
+    ## and this needs to be fixed manually.  The first error this will raise is ValueError
+    ## when pandas fails to parse date string.
     
     try:
+    
+        with open(filename, 'r') as file_in:
+            for line in file_in.readlines():
+                if line.startswith('\"Date\"'):
+                    line = line.strip()
+                    line = line.split(',')
+                    date = line[1]
+                    time = line[3]
+                    date_time_0 = ' '.join([date, time])
+                    date_time_0 = pd.to_datetime(date_time_0, format = '%m/%d/%Y %I:%M:%S %p')
+                    break
+                                    
+        if development == True:
+            base_name = filename.split('\\')[-1]
+        else:
+            base_name = filename.split('/')[-1]
+        
         df = pd.read_csv(filename, skiprows=30, header=0, names = col_str, index_col = False)
         df['elapsed_time'] = df['time']
         
@@ -223,7 +225,7 @@ for filename in csv_files:
           
         li.append(df)
         
-    except pd.errors.ParserError:
+    except ValueError:
         continue
     
 ## Concatenate individual dataframes to master frame and sort by date.
