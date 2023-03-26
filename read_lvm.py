@@ -26,12 +26,6 @@ else:
     path_mims = '/home/jeff/Dropbox/MIMS_Data_v3/'  # use your path
     path_edna = '/home/jeff/Dropbox/Apps/Pier-Sampler-Data/'  # use your path
     data_store = '/home/jeff/data_store/'
-    
-## Older MS data files will be moved to data_store. Create the directory if
-## not present.
-    
-if not os.path.isdir(data_store):
-    os.makedirs(data_store)
 
 #%%% Functions
 
@@ -151,6 +145,14 @@ def plot_trace(data, paramx, paramy, name, data_filter = None):
     )
     
     return(trace)
+
+#%% Set things up
+
+## Older MS data files will be moved to data_store. Create the directory if
+## not present.
+    
+if not os.path.isdir(data_store):
+    os.makedirs(data_store)
 
 csv_files = glob.glob(path_mims + "*.csv")
 edna_log_files = glob.glob(path_edna + 'PierSamplerData-*.log')
