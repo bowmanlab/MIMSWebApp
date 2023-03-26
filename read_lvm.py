@@ -339,7 +339,13 @@ for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N
 frame.to_csv('MIMS_data_vol2.csv.gz')
 edna_mims_round.to_csv('o2bio_vol2.csv')
 
-## Clean the dropbox folder
+## Clean the dropbox folder by moving all files that base name match to
+## a csv file to data_store. This works because the csv files are created last,
+## after the experimental files are no longer needed.
+
+processed_files = set(frame.source_file)
 
 for f in os.listdir(path_mims):
-    shutil.move(path_mims + f, data_store + f)
+    f_base = f.split('.')[0]
+    if f_base + '.csv' in processed_files:
+        shutil.move(path_mims + f, data_store + f)
