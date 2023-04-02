@@ -194,12 +194,15 @@ except FileNotFoundError:
 old_frame['time'] = pd.to_datetime(old_frame['time'], format = '%Y-%m-%d %H:%M:%S')
 li = [old_frame]
 
-## Iterate across the csv files, but don't include the most recent because
-## that creates problems for the instrument software.
+## Iterate across the csv files, but don't include the two most recent because
+## that creates problems for the instrument software. We do two most recent
+## because glob returns list of file names in alphanumeric order, so the last
+## file is not guaranteed to be the most recent, though the most recent should
+## be one of the last two.
 
 old_files = set(old_frame.source_file)
 
-for filename in csv_files[0:-1]:
+for filename in csv_files[0:-2]:
     
     if development == True:
         base_name = filename.split('\\')[-1]
