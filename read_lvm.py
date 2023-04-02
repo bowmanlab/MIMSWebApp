@@ -155,6 +155,7 @@ if not os.path.isdir(data_store):
     os.makedirs(data_store)
 
 csv_files = glob.glob(path_mims + "*.csv")
+csv_files.sort(key = lambda x: os.path.getmtime(x))
 edna_log_files = glob.glob(path_edna + 'PierSamplerData-*.log')
 edna_event_log_files = glob.glob(path_edna + 'PierSamplerEventLog-*.log')
 
@@ -194,15 +195,12 @@ except FileNotFoundError:
 old_frame['time'] = pd.to_datetime(old_frame['time'], format = '%Y-%m-%d %H:%M:%S')
 li = [old_frame]
 
-## Iterate across the csv files, but don't include the two most recent because
-## that creates problems for the instrument software. We do two most recent
-## because glob returns list of file names in alphanumeric order, so the last
-## file is not guaranteed to be the most recent, though the most recent should
-## be one of the last two.
+## Iterate across the csv files, but don't include the most recent because
+## that creates problems for the instrument software. 
 
 old_files = set(old_frame.source_file)
 
-for filename in csv_files[0:-2]:
+for filename in csv_files[0:-1]:
     
     if development == True:
         base_name = filename.split('\\')[-1]
