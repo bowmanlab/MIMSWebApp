@@ -20,12 +20,22 @@ use_sccoos = True
 if development == True:
     path_mims = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data_v3//'
     path_edna = 'C://Users//jeff//Documents//bowman_lab//MIMS//Apps//Pier-Sampler-Data//'
+    path_ctd = 'C://Users//jeff//Documents//bowman_lab//MIMS//CTD_Data_v1//'
+    path_suna = 'C://Users//jeff//Documents//bowman_lab//MIMS//SUNAV2_Data_v1//'
+    
     data_store = 'C://Users//jeff//Documents//bowman_lab//MIMS//data_store//'
+    data_store_ctd = 'C://Users//jeff//Documents//bowman_lab//CTD//data_store//'
+    data_store_suna = 'C://Users//jeff//Documents//bowman_lab//SUNA//data_store//'
     
 else:  
     path_mims = '/home/jeff/Dropbox/MIMS_Data_v3/'  # use your path
     path_edna = '/home/jeff/Dropbox/Apps/Pier-Sampler-Data/'  # use your path
+    path_ctd = '/home/jeff/Dropbox/CTD_Data_v1/'
+    path_suna = '/home/jeff/Dropbox/SUNAV2_Data_v1/'
+    
     data_store = '/home/jeff/data_store/'
+    data_store_ctd = '/home/jeff/data_store_CTD/'
+    data_store_suna = '/home/jeff/data_store_SUNA/'
 
 #%%% Functions
 
@@ -159,25 +169,98 @@ csv_files.sort(key = lambda x: os.path.getmtime(x))
 edna_log_files = glob.glob(path_edna + 'PierSamplerData-*.log')
 edna_event_log_files = glob.glob(path_edna + 'PierSamplerEventLog-*.log')
 
+#%% CTD data
+
+ctd_files = glob.glob(path_ctd + "*.cnv")
+ctd_files.sort(key = lambda x: os.path.getmtime(x))
+
+## Iterate across all ctd files, parse, add to list. Start by reading the old
+## combined data file, and create a new one if not present.
+
+ctd_col_str = ['Conductivity [mS/cm]',
+               'Density [sigma-theta, kg/m^3]',
+               'Depth [salt water, m]',
+               'Fluorescence [mg/m^3]',
+               'Oxygen [umol/l]',
+               'Oxygen [% saturation]',
+               'Potential Temperature [ITS-90 deg C]',
+               'Salinity [PSU]',
+               'Temperature [ITS-90 deg C]',
+               'Instrument Time [seconds]',
+               'Instrument Time [julian days]',
+               'flag']
+
+try:
+    old_frame = pd.read_csv('CTD_data_vol1.csv.gz', index_col = 0)
+    old_frame['Time [UTC]'] = pd.to_datetime(old_frame['Time [UTC]'], format = '%Y-%m-%d %H:%M:%S', utc = True)
+except FileNotFoundError:
+    old_frame = pd.DataFrame(columns = ctd_col_str)
+    old_frame['source_file'] = []
+
+li = [old_frame]
+
+## Iterate across the csv files.
+
+old_files = set(old_frame.source_file)
+
+for filename in ctd_files:
+    
+    if development == True:
+        base_name = filename.split('\\')[-1]
+    else:
+        base_name = filename.split('/')[-1]
+    
+    if base_name not in old_files:
+        df = pd.DataFrame(columns = ctd_col_str)
+        with open(filename, 'r') as file_in:
+            for line in file_in:
+                
+                ## Need correct year.
+                
+                if line.startswith('# start_time'):
+                    line = line.split()
+                    year = line[5]                    
+                    year_start = pd.to_datetime(year, format = '%Y', utc = True)
+
+                elif line.startswith('*') == False and line.startswith('#') == False:
+                    line = line.rstrip()
+                    line = line.strip()
+                    line = line.split()
+                    line = pd.Series(line, index = ctd_col_str)
+                    line_time = year_start + timedelta(float(line['Instrument Time [julian days]']))
+                    df.loc[line_time] = line
+        
+
+        df['source_file'] = base_name
+          
+        li.append(df)
+        print('adding', base_name)
+    
+## Concatenate individual dataframes to master frame and sort by date.
+
+ctd_frame = pd.concat(li, axis=0, ignore_index=False)
+ctd_frame.sort_index(ascending = True, inplace = True)
+ctd_frame.replace([np.inf, -np.inf], np.nan, inplace=True) 
+
 #%% SCCOOS temperature data
 
 ## Note that SCCOOS temperature data is recorded in UTC 
 
 #base = 'https://erddap.sccoos.org/erddap/tabledap/autoss.csv?station%2Ctime%2Ctemperature&station=%22scripps_pier%22&time%3E=2018-01-01&temperature_flagPrimary=1&orderBy(%22time%22)'
 #base = 'https://erddap.sensors.axds.co/erddap/tabledap/scripps-pier-automated-shore-sta.csv?time%2Csea_water_temperature%2Csea_water_temperature_qc_agg%2Cstation&time%3E=2018-01-01T00%3A00%3A00Z'
-base = 'https://erddap.sccoos.org/erddap/tabledap/autoss.csv?station%2Ctime%2Ctemperature&station=%22scripps_pier%22&time%3E2017-03-16T00%3A00%3A00Z'
-sccoos_temp = pd.read_csv(base, skiprows = [1], index_col = 'time')
+# base = 'https://erddap.sccoos.org/erddap/tabledap/autoss.csv?station%2Ctime%2Ctemperature&station=%22scripps_pier%22&time%3E2017-03-16T00%3A00%3A00Z'
+# sccoos_temp = pd.read_csv(base, skiprows = [1], index_col = 'time')
 
-## Unused code for just getting a single day
+# ## Unused code for just getting a single day
     
-#current_time = pd.to_datetime('today').tz_localize('America/Los_Angeles').tz_convert('UTC')
-#current_day = current_time.strftime('%Y-%m-%d')
+# #current_time = pd.to_datetime('today').tz_localize('America/Los_Angeles').tz_convert('UTC')
+# #current_day = current_time.strftime('%Y-%m-%d')
 
-#base = 'https://erddap.sccoos.org/erddap/tabledap/autoss.csv?station%2Ctime%2Ctemperature&station=%22scripps_pier%22&time%3E=' + current_day + '&temperature_flagPrimary=1&orderBy(%22time%22)'
+# #base = 'https://erddap.sccoos.org/erddap/tabledap/autoss.csv?station%2Ctime%2Ctemperature&station=%22scripps_pier%22&time%3E=' + current_day + '&temperature_flagPrimary=1&orderBy(%22time%22)'
 
-#sccoos_temp = pd.read_csv(base, skiprows = [1], index_col = 'time')
+# #sccoos_temp = pd.read_csv(base, skiprows = [1], index_col = 'time')
 
-sccoos_temp.index = pd.to_datetime(sccoos_temp.index, format = '%Y-%m-%dT%H:%M:%SZ')
+# sccoos_temp.index = pd.to_datetime(sccoos_temp.index, format = '%Y-%m-%dT%H:%M:%SZ')
 
 #%% MIMS data
 
@@ -251,52 +334,55 @@ sort.replace([np.inf, -np.inf], np.nan, inplace=True)
 sort['O2:Ar'] = sort['O2']/sort['Ar']
 sort['N2:Ar'] = sort['N2']/sort['Ar']
 
-## Round SCCOOS to 5 minute intervals and calculate %O2/%Ar at sat
+## Round CTD to 5 minute intervals and calculate %O2/%Ar at sat.
+#!!! include O2, S, fluorescence here, and make plots just from ctd_mims_round
 
-sccoos_temp_round = sccoos_temp[['temperature']]
-sccoos_temp_round['date_time'] = sccoos_temp.index.round('5T')
-sccoos_temp_round.drop_duplicates(subset = 'date_time', inplace = True)
-sccoos_temp_round.index = sccoos_temp_round.date_time
-sccoos_temp_round.drop(columns = 'date_time', inplace = True)
+ctd_temp_round = ctd_frame[['Temperature [ITS-90 deg C]']]
+ctd_temp_round.index = ctd_temp_round.index.tz_convert('US/Pacific')
+ctd_temp_round['date_time'] = ctd_temp_round.index.round('5T')
+ctd_temp_round.drop_duplicates(subset = 'date_time', inplace = True)
+ctd_temp_round.index = ctd_temp_round.date_time
+ctd_temp_round.drop(columns = 'date_time', inplace = True)
 
-sccoos_temp_round['O2_sat'] = O2sat([33.5] * sccoos_temp_round.shape[0], sccoos_temp_round['temperature'])
-sccoos_temp_round['Ar_sat'] = Arsat([33.5] * sccoos_temp_round.shape[0], sccoos_temp_round['temperature'])
-sccoos_temp_round['O2:Ar_sat'] = sccoos_temp_round['O2_sat'] / sccoos_temp_round['Ar_sat']
+ctd_temp_round['O2_sat'] = O2sat([33.5] * ctd_temp_round.shape[0], ctd_temp_round['Temperature [ITS-90 deg C]'])
+ctd_temp_round['Ar_sat'] = Arsat([33.5] * ctd_temp_round.shape[0], ctd_temp_round['Temperature [ITS-90 deg C]'])
+ctd_temp_round['O2:Ar_sat'] = ctd_temp_round['O2_sat'] / ctd_temp_round['Ar_sat']
 
-if use_sccoos == True:
-    sort_round = sort[['O2', 'O2:Ar', 'N2:Ar']]
-    sort_round.index = sort.time
-    sort_round.loc[sort_round.index, 'date_time'] = sort_round.index.round('5T')
-    sort_round = sort_round.groupby(sort_round.date_time).mean()
+## combine the CTD and MIMS datasets
+
+sort_round = sort[['O2', 'O2:Ar', 'N2:Ar']]
+sort_round.index = sort.time
+sort_round.loc[sort_round.index, 'date_time'] = sort_round.index.round('5T')
+sort_round = sort_round.groupby(sort_round.date_time).mean()
+
+ctd_mims_round = pd.concat([ctd_temp_round, sort_round], axis = 1, join = 'inner')
     
-    edna_mims_round = pd.concat([sccoos_temp_round, sort_round], axis = 1, join = 'inner')
-    
-else:
+#else:
 
 ## It looks like the easiest way to join the MIMS and eDNA datasets is to round
 ## both to nearest minute, eliminate duplicates, and glue together.
     
 #!!! Currently this block is not in use, as only applies if SCCOOS is not being used for T data.
 
-    edna_log_df_round = edna_log_df[['date_time', 'O2_sat', 'O2:Ar_sat']]
-    edna_log_df_round['date_time'] = edna_log_df_round.date_time.round('min')
-    edna_log_df_round.drop_duplicates(subset = 'date_time', inplace = True)
-    edna_log_df_round.index = edna_log_df_round.date_time
+    # edna_log_df_round = edna_log_df[['date_time', 'O2_sat', 'O2:Ar_sat']]
+    # edna_log_df_round['date_time'] = edna_log_df_round.date_time.round('min')
+    # edna_log_df_round.drop_duplicates(subset = 'date_time', inplace = True)
+    # edna_log_df_round.index = edna_log_df_round.date_time
     
-    sort_round = sort[['date_time', 'O2:Ar', 'N2:Ar']]
-    sort_round['date_time'] = sort.date_time.round('min')
-    sort_round.drop_duplicates(subset = 'date_time', inplace = True)
-    sort_round.index = sort_round.date_time
+    # sort_round = sort[['date_time', 'O2:Ar', 'N2:Ar']]
+    # sort_round['date_time'] = sort.date_time.round('min')
+    # sort_round.drop_duplicates(subset = 'date_time', inplace = True)
+    # sort_round.index = sort_round.date_time
     
-    edna_mims_round = pd.concat([edna_log_df_round, sort_round], axis = 1, join = 'inner')
-    edna_mims_round.drop(columns = 'date_time', inplace = True)
+    # edna_mims_round = pd.concat([edna_log_df_round, sort_round], axis = 1, join = 'inner')
+    # edna_mims_round.drop(columns = 'date_time', inplace = True)
 
 ## Derive a column filter based on N2:Ar values which should only vary
 ## during calibration or if something is very wrong.  Note that these do
 ## actually vary over time, so probably you'll have to adjust this at some
 ## point.
 
-edna_mims_round_col_filter = edna_mims_round['N2:Ar'] > 0
+ctd_mims_round_col_filter = ctd_mims_round['N2:Ar'] > 0
 #edna_mims_round_col_filter = (edna_mims_round['N2:Ar'] > 9) & (edna_mims_round['N2:Ar'] < 20) & (edna_mims_round.index > pd.to_datetime('2021-01-01', format = '%Y-%m-%d', exact = True))
 
 ## O2 correction - correction factor derived from calibrations with aged water.
@@ -306,27 +392,37 @@ edna_mims_round_col_filter = edna_mims_round['N2:Ar'] > 0
 
 #O2_cf = 2.24 # prior to 20 May 2021, after this date 1.5
 
-edna_mims_round.loc[edna_mims_round.index < pd.to_datetime('2021-03-26 12:00:00'), 'O2_CF'] = 1.44 # New inlet after 26 March
-edna_mims_round.loc[(edna_mims_round.index >= pd.to_datetime('2021-03-26 12:00:00')) & (edna_mims_round.index < pd.to_datetime('2021-05-20 12:00:00')), 'O2_CF'] = 2.24
-edna_mims_round.loc[(edna_mims_round.index >= pd.to_datetime('2021-05-20 12:00:00')) & (edna_mims_round.index < pd.to_datetime('2021-08-6 12:00:00')), 'O2_CF'] = 1.5
-edna_mims_round.loc[edna_mims_round.index >= pd.to_datetime('2021-08-6 12:00:00'), 'O2_CF'] = 2.0
-edna_mims_round.loc[edna_mims_round.index >= pd.to_datetime('2022-02-12 12:00:00'), 'O2_CF'] = 1.54
-edna_mims_round.loc[edna_mims_round.index >= pd.to_datetime('2022-11-17 12:00:00'), 'O2_CF'] = 1.76
-edna_mims_round.loc[edna_mims_round.index >= pd.to_datetime('2023-01-23 12:00:00'), 'O2_CF'] = 2.0
+ctd_mims_round.loc[ctd_mims_round.index < pd.to_datetime('2021-03-26 12:00:00'), 'O2_CF'] = 1.44 # New inlet after 26 March
+ctd_mims_round.loc[(ctd_mims_round.index >= pd.to_datetime('2021-03-26 12:00:00')) & (ctd_mims_round.index < pd.to_datetime('2021-05-20 12:00:00')), 'O2_CF'] = 2.24
+ctd_mims_round.loc[(ctd_mims_round.index >= pd.to_datetime('2021-05-20 12:00:00')) & (ctd_mims_round.index < pd.to_datetime('2021-08-6 12:00:00')), 'O2_CF'] = 1.5
+ctd_mims_round.loc[ctd_mims_round.index >= pd.to_datetime('2021-08-6 12:00:00'), 'O2_CF'] = 2.0
+ctd_mims_round.loc[ctd_mims_round.index >= pd.to_datetime('2022-02-12 12:00:00'), 'O2_CF'] = 1.54
+ctd_mims_round.loc[ctd_mims_round.index >= pd.to_datetime('2022-11-17 12:00:00'), 'O2_CF'] = 1.76
+ctd_mims_round.loc[ctd_mims_round.index >= pd.to_datetime('2023-01-23 12:00:00'), 'O2_CF'] = 2.0
 
 ## calculate [O2]bio.  Units are umol L-1
 
-edna_mims_round['o2_bio'] = ((edna_mims_round['O2:Ar'] * edna_mims_round['O2_CF']) / edna_mims_round['O2:Ar_sat'] - 1) * edna_mims_round['O2_sat']
+ctd_mims_round['o2_bio'] = ((ctd_mims_round['O2:Ar'] * ctd_mims_round['O2_CF']) / ctd_mims_round['O2:Ar_sat'] - 1) * ctd_mims_round['O2_sat']
+
+#%% Create plots.
 
 ## Plot [O2]bio
 
-trace1 = plot_trace(edna_mims_round, 'index', 'o2_bio', '[O2]bio', edna_mims_round_col_filter)
+trace1 = plot_trace(ctd_mims_round, 'index', 'o2_bio', '[O2]bio', ctd_mims_round_col_filter)
 data = [trace1]
 layout = plot_layout('[O<sub>2</sub>]<sub>bio</sub> - TESTING', '[O<sub>2</sub>]<sub>bio</sub> (micromolar)') ## Testing in plot title.
 fig = go.Figure(data=data, layout=layout)
 pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 
-#%% Create plots.
+## Plot temp
+
+trace1 = plot_trace(ctd_mims_round, 'index', 'Temperature [ITS-90 deg C]', 'T deg C')
+data = [trace1]
+layout = plot_layout('T deg C - TESTING', 'T deg C') ## Testing in plot title.
+fig = go.Figure(data=data, layout=layout)
+pio.write_html(fig, file= 'ecoobs/' + 'Temperature' + ".html", auto_open=False)
+
+#!!! you are here, make plot for T
 
 ## SCCOOS results in fewer datapoints because the temperature time steps are coarser.
 
@@ -336,25 +432,21 @@ mims_col_filter[0:-20000] = False
             
 for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N2:Ar', 'Water']:
     
-    ## filter outliers based on z-score
-    
-    #col_filter = np.abs(stats.zscore(sort.loc[:,col], nan_policy = 'omit')) < 3
-    
-    ## Limit to about a months worth of data.  If you load the full dataset
-    ## the website loads pretty slow and the plots are difficult to work with.
-    
-    #col_filter[0:-10000] = False
-    
     trace1 = plot_trace(sort, 'time', col, '', mims_col_filter)
     data = [trace1]
     layout = plot_layout(col + ' - TESTING', col) ## Testing in plot title.
     fig = go.Figure(data=data, layout=layout)
     pio.write_html(fig, file= 'ecoobs/' + col.replace(':', '_') + ".html", auto_open=False)
+    
+#%% export data
    
 frame.to_csv('MIMS_data_vol2.csv.gz')
-edna_mims_round.to_csv('o2bio_vol2.csv')
+ctd_mims_round.to_csv('o2bio_vol2.csv')
+ctd_frame.to_csv('CTD_data_vol1.csv.gz')
 
-## Clean the dropbox folder by moving all files that base name match to
+#%% clean dropbox folder
+
+## Clean the dropbox folder by moving all MIMS files that base name match to
 ## a csv file to data_store. This works because the csv files are created last,
 ## after the experimental files are no longer needed.
 
@@ -364,3 +456,13 @@ for f in os.listdir(path_mims):
     f_base = f.split('.')[0]
     if f_base + '.csv' in processed_files:
         shutil.move(path_mims + f, data_store + f)
+        
+## Clean the dropbox folder by moving all CTD hex, cnv, and xmlcon files. The
+## cnv file are only created by the Seabird Data Conversion utility after
+## the run is complete so this should be safe.
+
+processed_files = set(ctd_frame.source_file.str.split('.', expand = True)[0])
+for f in os.listdir(path_ctd):
+    f_base = f.split('.')[0]
+    if f_base in processed_files:
+        shutil.move(path_ctd + f, data_store + f)
