@@ -7,9 +7,9 @@ from scipy import stats
 import os
 from datetime import datetime, timedelta
 import shutil
+import codecs
 
-#!!! To do: mv the files out of Dropbox to harddrive at some frequency.  Skip calibration files.  Don't
-## hard code header length.
+#!!! Don't hard code header length.
 
 #%%% Switch for transitioning between dev machine (windows) and production
 ## machine (Linux)
@@ -192,7 +192,7 @@ ctd_col_str = ['Conductivity [mS/cm]',
 
 try:
     old_frame = pd.read_csv('CTD_data_vol1.csv.gz', index_col = 0)
-    old_frame['Time [UTC]'] = pd.to_datetime(old_frame['Time [UTC]'], format = '%Y-%m-%d %H:%M:%S', utc = True)
+    old_frame.index = pd.to_datetime(old_frame.index, format = '%Y-%m-%d %H:%M:%S', utc = True)
 except FileNotFoundError:
     old_frame = pd.DataFrame(columns = ctd_col_str)
     old_frame['source_file'] = []
@@ -212,7 +212,7 @@ for filename in ctd_files:
     
     if base_name not in old_files:
         df = pd.DataFrame(columns = ctd_col_str)
-        with open(filename, 'r') as file_in:
+        with codecs.open(filename, 'r', 'latin-1') as file_in:
             for line in file_in:
                 
                 ## Need correct year.
@@ -221,16 +221,18 @@ for filename in ctd_files:
                     line = line.split()
                     year = line[5]                    
                     year_start = pd.to_datetime(year, format = '%Y', utc = True)
-
+    
                 elif line.startswith('*') == False and line.startswith('#') == False:
                     line = line.rstrip()
                     line = line.strip()
                     line = line.split()
                     line = pd.Series(line, index = ctd_col_str)
-                    line_time = year_start + timedelta(float(line['Instrument Time [julian days]']))
+                    
+                    ## Straight julian decimal will put you one day ahead, must substract 1
+                    
+                    line_time = year_start + timedelta(float(line['Instrument Time [julian days]']) - 1)
                     df.loc[line_time] = line
         
-
         df['source_file'] = base_name
           
         li.append(df)
@@ -337,15 +339,19 @@ sort['N2:Ar'] = sort['N2']/sort['Ar']
 ## Round CTD to 5 minute intervals and calculate %O2/%Ar at sat.
 #!!! include O2, S, fluorescence here, and make plots just from ctd_mims_round
 
-ctd_temp_round = ctd_frame[['Temperature [ITS-90 deg C]']]
+ctd_temp_round = ctd_frame[['Temperature [ITS-90 deg C]', 'Salinity [PSU]', 'Oxygen [umol/l]', 'Oxygen [% saturation]', 'Fluorescence [mg/m^3]']]
 ctd_temp_round.index = ctd_temp_round.index.tz_convert('US/Pacific')
+ctd_temp_round.index = ctd_temp_round.index.tz_localize(None) # Must remove TZ info to match with MIMS
 ctd_temp_round['date_time'] = ctd_temp_round.index.round('5T')
 ctd_temp_round.drop_duplicates(subset = 'date_time', inplace = True)
 ctd_temp_round.index = ctd_temp_round.date_time
 ctd_temp_round.drop(columns = 'date_time', inplace = True)
 
-ctd_temp_round['O2_sat'] = O2sat([33.5] * ctd_temp_round.shape[0], ctd_temp_round['Temperature [ITS-90 deg C]'])
-ctd_temp_round['Ar_sat'] = Arsat([33.5] * ctd_temp_round.shape[0], ctd_temp_round['Temperature [ITS-90 deg C]'])
+## Change to numeric types here, should probably just change the
+## dtype of the whole frame much earlier
+
+ctd_temp_round['O2_sat'] = O2sat([33.5] * ctd_temp_round.shape[0], pd.to_numeric(ctd_temp_round['Temperature [ITS-90 deg C]']))
+ctd_temp_round['Ar_sat'] = Arsat([33.5] * ctd_temp_round.shape[0], pd.to_numeric(ctd_temp_round['Temperature [ITS-90 deg C]']))
 ctd_temp_round['O2:Ar_sat'] = ctd_temp_round['O2_sat'] / ctd_temp_round['Ar_sat']
 
 ## combine the CTD and MIMS datasets
@@ -356,26 +362,6 @@ sort_round.loc[sort_round.index, 'date_time'] = sort_round.index.round('5T')
 sort_round = sort_round.groupby(sort_round.date_time).mean()
 
 ctd_mims_round = pd.concat([ctd_temp_round, sort_round], axis = 1, join = 'inner')
-    
-#else:
-
-## It looks like the easiest way to join the MIMS and eDNA datasets is to round
-## both to nearest minute, eliminate duplicates, and glue together.
-    
-#!!! Currently this block is not in use, as only applies if SCCOOS is not being used for T data.
-
-    # edna_log_df_round = edna_log_df[['date_time', 'O2_sat', 'O2:Ar_sat']]
-    # edna_log_df_round['date_time'] = edna_log_df_round.date_time.round('min')
-    # edna_log_df_round.drop_duplicates(subset = 'date_time', inplace = True)
-    # edna_log_df_round.index = edna_log_df_round.date_time
-    
-    # sort_round = sort[['date_time', 'O2:Ar', 'N2:Ar']]
-    # sort_round['date_time'] = sort.date_time.round('min')
-    # sort_round.drop_duplicates(subset = 'date_time', inplace = True)
-    # sort_round.index = sort_round.date_time
-    
-    # edna_mims_round = pd.concat([edna_log_df_round, sort_round], axis = 1, join = 'inner')
-    # edna_mims_round.drop(columns = 'date_time', inplace = True)
 
 ## Derive a column filter based on N2:Ar values which should only vary
 ## during calibration or if something is very wrong.  Note that these do
@@ -392,13 +378,13 @@ ctd_mims_round_col_filter = ctd_mims_round['N2:Ar'] > 0
 
 #O2_cf = 2.24 # prior to 20 May 2021, after this date 1.5
 
-ctd_mims_round.loc[ctd_mims_round.index < pd.to_datetime('2021-03-26 12:00:00'), 'O2_CF'] = 1.44 # New inlet after 26 March
-ctd_mims_round.loc[(ctd_mims_round.index >= pd.to_datetime('2021-03-26 12:00:00')) & (ctd_mims_round.index < pd.to_datetime('2021-05-20 12:00:00')), 'O2_CF'] = 2.24
-ctd_mims_round.loc[(ctd_mims_round.index >= pd.to_datetime('2021-05-20 12:00:00')) & (ctd_mims_round.index < pd.to_datetime('2021-08-6 12:00:00')), 'O2_CF'] = 1.5
-ctd_mims_round.loc[ctd_mims_round.index >= pd.to_datetime('2021-08-6 12:00:00'), 'O2_CF'] = 2.0
-ctd_mims_round.loc[ctd_mims_round.index >= pd.to_datetime('2022-02-12 12:00:00'), 'O2_CF'] = 1.54
-ctd_mims_round.loc[ctd_mims_round.index >= pd.to_datetime('2022-11-17 12:00:00'), 'O2_CF'] = 1.76
-ctd_mims_round.loc[ctd_mims_round.index >= pd.to_datetime('2023-01-23 12:00:00'), 'O2_CF'] = 2.0
+ctd_mims_round.loc[ctd_mims_round.index.tz_localize(None) < pd.to_datetime('2021-03-26 12:00:00'), 'O2_CF'] = 1.44 # New inlet after 26 March
+ctd_mims_round.loc[(ctd_mims_round.index.tz_localize(None) >= pd.to_datetime('2021-03-26 12:00:00')) & (ctd_mims_round.index.tz_localize(None) < pd.to_datetime('2021-05-20 12:00:00')), 'O2_CF'] = 2.24
+ctd_mims_round.loc[(ctd_mims_round.index.tz_localize(None) >= pd.to_datetime('2021-05-20 12:00:00')) & (ctd_mims_round.index.tz_localize(None) < pd.to_datetime('2021-08-6 12:00:00')), 'O2_CF'] = 1.5
+ctd_mims_round.loc[ctd_mims_round.index.tz_localize(None) >= pd.to_datetime('2021-08-6 12:00:00'), 'O2_CF'] = 2.0
+ctd_mims_round.loc[ctd_mims_round.index.tz_localize(None) >= pd.to_datetime('2022-02-12 12:00:00'), 'O2_CF'] = 1.54
+ctd_mims_round.loc[ctd_mims_round.index.tz_localize(None)>= pd.to_datetime('2022-11-17 12:00:00'), 'O2_CF'] = 1.76
+ctd_mims_round.loc[ctd_mims_round.index.tz_localize(None) >= pd.to_datetime('2023-01-23 12:00:00'), 'O2_CF'] = 2.0
 
 ## calculate [O2]bio.  Units are umol L-1
 
@@ -418,11 +404,43 @@ pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 
 trace1 = plot_trace(ctd_mims_round, 'index', 'Temperature [ITS-90 deg C]', 'T deg C')
 data = [trace1]
-layout = plot_layout('T deg C - TESTING', 'T deg C') ## Testing in plot title.
+layout = plot_layout('Temperature - TESTING', 'T deg C') ## Testing in plot title.
 fig = go.Figure(data=data, layout=layout)
 pio.write_html(fig, file= 'ecoobs/' + 'Temperature' + ".html", auto_open=False)
 
-#!!! you are here, make plot for T
+## Plot salinity
+
+trace1 = plot_trace(ctd_mims_round, 'index', 'Salinity [PSU]', 'PSU')
+data = [trace1]
+layout = plot_layout('Salinity - TESTING', 'PSU') ## Testing in plot title.
+fig = go.Figure(data=data, layout=layout)
+pio.write_html(fig, file= 'ecoobs/' + 'Salinity' + ".html", auto_open=False)
+
+## Plot fluorescence
+
+trace1 = plot_trace(ctd_mims_round, 'index', 'Fluorescence [mg/m^3]', 'mg/m^3')
+data = [trace1]
+layout = plot_layout('Chlorophyll - TESTING', 'mg m<sup>3</sup>') ## Testing in plot title.
+fig = go.Figure(data=data, layout=layout)
+pio.write_html(fig, file= 'ecoobs/' + 'Chlorophyll' + ".html", auto_open=False)
+
+## Plot O2
+
+trace1 = plot_trace(ctd_mims_round, 'index', 'Oxygen [umol/l]', 'umol/l')
+data = [trace1]
+layout = plot_layout('Dissolved Oxygen - TESTING', '<span>&#181;</span>M') ## Testing in plot title.
+fig = go.Figure(data=data, layout=layout)
+pio.write_html(fig, file= 'ecoobs/' + 'Oxygen' + ".html", auto_open=False)
+
+## Plot O2 % Sat
+
+trace1 = plot_trace(ctd_mims_round, 'index', 'Oxygen [% saturation]', '%')
+data = [trace1]
+layout = plot_layout('Dissolved Oxygen % Sat - TESTING', '%') ## Testing in plot title.
+fig = go.Figure(data=data, layout=layout)
+pio.write_html(fig, file= 'ecoobs/' + 'Oxygen_percent_sat' + ".html", auto_open=False)
+
+#!!! you are here, make plot for S, Chl
 
 ## SCCOOS results in fewer datapoints because the temperature time steps are coarser.
 
@@ -441,7 +459,7 @@ for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N
 #%% export data
    
 frame.to_csv('MIMS_data_vol2.csv.gz')
-ctd_mims_round.to_csv('o2bio_vol2.csv')
+ctd_mims_round.to_csv('o2bio_vol2.1.csv') ## vol 2.1 uses CTD for temp instead of SCCOOS, starts on May 18, 2023
 ctd_frame.to_csv('CTD_data_vol1.csv.gz')
 
 #%% clean dropbox folder
@@ -465,4 +483,4 @@ processed_files = set(ctd_frame.source_file.str.split('.', expand = True)[0])
 for f in os.listdir(path_ctd):
     f_base = f.split('.')[0]
     if f_base in processed_files:
-        shutil.move(path_ctd + f, data_store + f)
+        shutil.move(path_ctd + f, data_store_ctd + f)
