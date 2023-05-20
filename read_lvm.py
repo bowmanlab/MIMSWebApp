@@ -8,18 +8,18 @@ import os
 from datetime import datetime, timedelta
 import shutil
 import codecs
+import re
 
 #!!! Don't hard code header length.
 
 #%%% Switch for transitioning between dev machine (windows) and production
 ## machine (Linux)
 
-development = False
+development = True
 use_sccoos = True
 
 if development == True:
     path_mims = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data_v3//'
-    path_edna = 'C://Users//jeff//Documents//bowman_lab//MIMS//Apps//Pier-Sampler-Data//'
     path_ctd = 'C://Users//jeff//Documents//bowman_lab//MIMS//CTD_Data_v1//'
     path_suna = 'C://Users//jeff//Documents//bowman_lab//MIMS//SUNAV2_Data_v1//'
     
@@ -29,7 +29,6 @@ if development == True:
     
 else:  
     path_mims = '/home/jeff/Dropbox/MIMS_Data_v3/'  # use your path
-    path_edna = '/home/jeff/Dropbox/Apps/Pier-Sampler-Data/'  # use your path
     path_ctd = '/home/jeff/Dropbox/CTD_Data_v1/'
     path_suna = '/home/jeff/Dropbox/SUNAV2_Data_v1/'
     
@@ -158,17 +157,68 @@ def plot_trace(data, paramx, paramy, name, data_filter = None):
 
 #%% Set things up
 
-## Older MS data files will be moved to data_store. Create the directory if
+## Older data files will be moved to data_store. Create the directory if
 ## not present.
     
 if not os.path.isdir(data_store):
     os.makedirs(data_store)
+    
+#%% SUNA data
 
-csv_files = glob.glob(path_mims + "*.csv")
-csv_files.sort(key = lambda x: os.path.getmtime(x))
-edna_log_files = glob.glob(path_edna + 'PierSamplerData-*.log')
-edna_event_log_files = glob.glob(path_edna + 'PierSamplerEventLog-*.log')
+suna_files = glob.glob(path_suna + "*.sbslog")
+suna_files.sort(key = lambda x: os.path.getmtime(x))
 
+suna_col_str = ['nitrate_uM', 'nitrate_mg', 'source_file']
+
+try:
+    suna_old_frame = pd.read_csv('SUNAV2_data_vol1.csv.gz', index_col = 0)
+    suna_old_frame.index = pd.to_datetime(suna_old_frame.index, format = '%Y-%m-%d %H:%M:%S', utc = True)
+except FileNotFoundError:
+    suna_old_frame = pd.DataFrame(columns = suna_col_str)
+    
+li = [suna_old_frame]
+
+## Iterate across the sbslog files.
+
+old_files = set(suna_old_frame.source_file)
+suna_new_data = pd.DataFrame(columns = suna_col_str)
+
+for filename in suna_files:
+    
+    if development == True:
+        base_name = filename.split('\\')[-1]
+    else:
+        base_name = filename.split('/')[-1]
+        
+    nitrate_um = []
+    nitrate_mg = []
+    
+    if base_name not in old_files: 
+        with open(filename, 'r') as file_in:
+            for line in file_in:
+                if line.startswith('<?xml'):
+                    names = re.findall('<Name>[^<]*</Name>', line)
+                elif line.startswith('SATSLF1921'):
+                    line = line.strip()
+                    line = line.rstrip()
+                    line = line.split(',')
+                    
+                    year = pd.to_datetime(line[1][0:4], format = '%Y', utc = True)
+                    date = year + timedelta(float(line[1][-3:]) - 1)
+                    date_time = date + timedelta(float(line[2])/24)
+                    
+                    ## It's a little silly to parse dates for all lines and only use the last date, but it works.
+                    
+                    nitrate_um.append(float(line[3]))
+                    nitrate_mg.append(float(line[4]))
+
+        print('adding', base_name)                     
+        suna_new_data.loc[date_time] = pd.Series([np.average(nitrate_um), np.average(nitrate_mg), base_name], index = suna_col_str)      
+                    
+li.append(suna_new_data)                              
+suna_frame = pd.concat(li, axis = 0, ignore_index=False)
+suna_frame.sort_index(ascending = True, inplace = True)
+        
 #%% CTD data
 
 ctd_files = glob.glob(path_ctd + "*.cnv")
@@ -244,27 +294,10 @@ ctd_frame = pd.concat(li, axis=0, ignore_index=False)
 ctd_frame.sort_index(ascending = True, inplace = True)
 ctd_frame.replace([np.inf, -np.inf], np.nan, inplace=True) 
 
-#%% SCCOOS temperature data
-
-## Note that SCCOOS temperature data is recorded in UTC 
-
-#base = 'https://erddap.sccoos.org/erddap/tabledap/autoss.csv?station%2Ctime%2Ctemperature&station=%22scripps_pier%22&time%3E=2018-01-01&temperature_flagPrimary=1&orderBy(%22time%22)'
-#base = 'https://erddap.sensors.axds.co/erddap/tabledap/scripps-pier-automated-shore-sta.csv?time%2Csea_water_temperature%2Csea_water_temperature_qc_agg%2Cstation&time%3E=2018-01-01T00%3A00%3A00Z'
-# base = 'https://erddap.sccoos.org/erddap/tabledap/autoss.csv?station%2Ctime%2Ctemperature&station=%22scripps_pier%22&time%3E2017-03-16T00%3A00%3A00Z'
-# sccoos_temp = pd.read_csv(base, skiprows = [1], index_col = 'time')
-
-# ## Unused code for just getting a single day
-    
-# #current_time = pd.to_datetime('today').tz_localize('America/Los_Angeles').tz_convert('UTC')
-# #current_day = current_time.strftime('%Y-%m-%d')
-
-# #base = 'https://erddap.sccoos.org/erddap/tabledap/autoss.csv?station%2Ctime%2Ctemperature&station=%22scripps_pier%22&time%3E=' + current_day + '&temperature_flagPrimary=1&orderBy(%22time%22)'
-
-# #sccoos_temp = pd.read_csv(base, skiprows = [1], index_col = 'time')
-
-# sccoos_temp.index = pd.to_datetime(sccoos_temp.index, format = '%Y-%m-%dT%H:%M:%SZ')
-
 #%% MIMS data
+
+csv_files = glob.glob(path_mims + "*.csv")
+csv_files.sort(key = lambda x: os.path.getmtime(x))
 
 col_str = ["time", "ms", "Water", "N2", "O2", "Ar", "Inlet Temperature", "Vacuum Pressure"]
 
@@ -337,7 +370,6 @@ sort['O2:Ar'] = sort['O2']/sort['Ar']
 sort['N2:Ar'] = sort['N2']/sort['Ar']
 
 ## Round CTD to 5 minute intervals and calculate %O2/%Ar at sat.
-#!!! include O2, S, fluorescence here, and make plots just from ctd_mims_round
 
 ctd_temp_round = ctd_frame[['Temperature [ITS-90 deg C]', 'Salinity [PSU]', 'Oxygen [umol/l]', 'Oxygen [% saturation]', 'Fluorescence [mg/m^3]']]
 ctd_temp_round.index = ctd_temp_round.index.tz_convert('US/Pacific')
@@ -390,13 +422,23 @@ ctd_mims_round.loc[ctd_mims_round.index.tz_localize(None) >= pd.to_datetime('202
 
 ctd_mims_round['o2_bio'] = ((ctd_mims_round['O2:Ar'] * ctd_mims_round['O2_CF']) / ctd_mims_round['O2:Ar_sat'] - 1) * ctd_mims_round['O2_sat']
 
+#!!! add AOU calculation here
+
 #%% Create plots.
+
+## Plot NO3
+
+trace1 = plot_trace(suna_frame, 'index', 'nitrate_uM', 'Nitrate')
+data = [trace1]
+layout = plot_layout('Nitrate - TESTING', '<span>&#181;</span>M') ## Testing in plot title.
+fig = go.Figure(data=data, layout=layout)
+pio.write_html(fig, file= 'ecoobs/' + 'Nitrate' + ".html", auto_open=False)
 
 ## Plot [O2]bio
 
 trace1 = plot_trace(ctd_mims_round, 'index', 'o2_bio', '[O2]bio', ctd_mims_round_col_filter)
 data = [trace1]
-layout = plot_layout('[O<sub>2</sub>]<sub>bio</sub> - TESTING', '[O<sub>2</sub>]<sub>bio</sub> (micromolar)') ## Testing in plot title.
+layout = plot_layout('[O<sub>2</sub>]<sub>bio</sub> - TESTING', '[O<sub>2</sub>]<sub>bio</sub> <span>&#181;</span>M') ## Testing in plot title.
 fig = go.Figure(data=data, layout=layout)
 pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 
@@ -440,8 +482,6 @@ layout = plot_layout('Dissolved Oxygen % Sat - TESTING', '%') ## Testing in plot
 fig = go.Figure(data=data, layout=layout)
 pio.write_html(fig, file= 'ecoobs/' + 'Oxygen_percent_sat' + ".html", auto_open=False)
 
-#!!! you are here, make plot for S, Chl
-
 ## SCCOOS results in fewer datapoints because the temperature time steps are coarser.
 
 mims_col_filter = sort['N2:Ar'] > 0
@@ -461,6 +501,9 @@ for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N
 frame.to_csv('MIMS_data_vol2.csv.gz')
 ctd_mims_round.to_csv('o2bio_vol2.1.csv') ## vol 2.1 uses CTD for temp instead of SCCOOS, starts on May 18, 2023
 ctd_frame.to_csv('CTD_data_vol1.csv.gz')
+suna_frame.to_csv('SUNAV2_data_vol1.csv.gz')
+
+[][1]
 
 #%% clean dropbox folder
 
@@ -484,3 +527,12 @@ for f in os.listdir(path_ctd):
     f_base = f.split('.')[0]
     if f_base in processed_files:
         shutil.move(path_ctd + f, data_store_ctd + f)
+        
+## Clean the dropbox folder by moving all SUNA sbslog files. Files currently
+## being written have "lock" in the extension.
+
+processed_files = set(suna_frame.source_file.str.split('.', expand = True)[0])
+for f in os.listdir(path_suna):
+    f_base = f.split('.')[0]
+    if f_base in processed_files:
+        shutil.move(path_suna + f, data_store_suna + f)
