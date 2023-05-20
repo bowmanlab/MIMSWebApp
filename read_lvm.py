@@ -503,8 +503,6 @@ ctd_mims_round.to_csv('o2bio_vol2.1.csv') ## vol 2.1 uses CTD for temp instead o
 ctd_frame.to_csv('CTD_data_vol1.csv.gz')
 suna_frame.to_csv('SUNAV2_data_vol1.csv.gz')
 
-[][1]
-
 #%% clean dropbox folder
 
 ## Clean the dropbox folder by moving all MIMS files that base name match to
