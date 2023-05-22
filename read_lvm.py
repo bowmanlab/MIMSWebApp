@@ -168,64 +168,64 @@ if not os.path.isdir(data_store):
 suna_files = glob.glob(path_suna + "*.sbslog")
 suna_files.sort(key = lambda x: os.path.getmtime(x))
 
-suna_col_str = ['nitrate_uM', 'nitrate_mg', 'source_file']
+# suna_col_str = ['nitrate_uM', 'nitrate_mg', 'source_file']
 
-try:
-    suna_old_frame = pd.read_csv('SUNAV2_data_vol1.csv.gz', index_col = 0)
-    suna_old_frame.index = pd.to_datetime(suna_old_frame.index, format = '%Y-%m-%d %H:%M:%S', utc = True)
-except FileNotFoundError:
-    suna_old_frame = pd.DataFrame(columns = suna_col_str)
+# try:
+#     suna_old_frame = pd.read_csv('SUNAV2_data_vol1.csv.gz', index_col = 0)
+#     suna_old_frame.index = pd.to_datetime(suna_old_frame.index, format = '%Y-%m-%d %H:%M:%S', utc = True)
+# except FileNotFoundError:
+#     suna_old_frame = pd.DataFrame(columns = suna_col_str)
     
-li = [suna_old_frame]
+# li = [suna_old_frame]
 
-## Iterate across the sbslog files.
+# ## Iterate across the sbslog files.
 
-old_files = set(suna_old_frame.source_file)
-suna_new_data = pd.DataFrame(columns = suna_col_str)
+# old_files = set(suna_old_frame.source_file)
+# suna_new_data = pd.DataFrame(columns = suna_col_str)
 
-for filename in suna_files:
+# for filename in suna_files:
     
-    if development == True:
-        base_name = filename.split('\\')[-1]
-    else:
-        base_name = filename.split('/')[-1]
+#     if development == True:
+#         base_name = filename.split('\\')[-1]
+#     else:
+#         base_name = filename.split('/')[-1]
         
-    nitrate_um = []
-    nitrate_mg = []
+#     nitrate_um = []
+#     nitrate_mg = []
     
-    if base_name not in old_files:
-        try:
-            with open(filename, 'r') as file_in:
-                for line in file_in:
-                    if line.startswith('<?xml'):
-                        names = re.findall('<Name>[^<]*</Name>', line)
-                    elif line.startswith('SATSLF1921'):
-                        line = line.strip()
-                        line = line.rstrip()
-                        line = line.split(',')
+#     if base_name not in old_files:
+#         try:
+#             with open(filename, 'r') as file_in:
+#                 for line in file_in:
+#                     if line.startswith('<?xml'):
+#                         names = re.findall('<Name>[^<]*</Name>', line)
+#                     elif line.startswith('SATSLF1921'):
+#                         line = line.strip()
+#                         line = line.rstrip()
+#                         line = line.split(',')
                         
-                        year = pd.to_datetime(line[1][0:4], format = '%Y', utc = True)
-                        date = year + timedelta(float(line[1][-3:]) - 1)
-                        date_time = date + timedelta(float(line[2])/24)
+#                         year = pd.to_datetime(line[1][0:4], format = '%Y', utc = True)
+#                         date = year + timedelta(float(line[1][-3:]) - 1)
+#                         date_time = date + timedelta(float(line[2])/24)
                         
-                        ## It's a little silly to parse dates for all lines and only use the last date, but it works.
+#                         ## It's a little silly to parse dates for all lines and only use the last date, but it works.
                         
-                        nitrate_um.append(float(line[3]))
-                        nitrate_mg.append(float(line[4]))
+#                         nitrate_um.append(float(line[3]))
+#                         nitrate_mg.append(float(line[4]))
 
-            print('adding', base_name)                     
-            suna_new_data.loc[date_time] = pd.Series([np.average(nitrate_um), np.average(nitrate_mg), base_name], index = suna_col_str)  
+#             print('adding', base_name)                     
+#             suna_new_data.loc[date_time] = pd.Series([np.average(nitrate_um), np.average(nitrate_mg), base_name], index = suna_col_str)  
             
-        except NameError:
+#         except NameError:
             
-            ## NameError happens if there isn't a valid data line in file.  Currently, the SUNA is creating
-            ## two types of log files but it isn't clear why this is happening.
+#             ## NameError happens if there isn't a valid data line in file.  Currently, the SUNA is creating
+#             ## two types of log files but it isn't clear why this is happening.
             
-            continue
+#             continue
                     
-li.append(suna_new_data)                              
-suna_frame = pd.concat(li, axis = 0, ignore_index=False)
-suna_frame.sort_index(ascending = True, inplace = True)
+# li.append(suna_new_data)                              
+# suna_frame = pd.concat(li, axis = 0, ignore_index=False)
+# suna_frame.sort_index(ascending = True, inplace = True)
         
 #%% CTD data
 
@@ -436,11 +436,11 @@ ctd_mims_round['o2_bio'] = ((ctd_mims_round['O2:Ar'] * ctd_mims_round['O2_CF']) 
 
 ## Plot NO3
 
-trace1 = plot_trace(suna_frame, 'index', 'nitrate_uM', 'Nitrate')
-data = [trace1]
-layout = plot_layout('Nitrate - TESTING', '<span>&#181;</span>M') ## Testing in plot title.
-fig = go.Figure(data=data, layout=layout)
-pio.write_html(fig, file= 'ecoobs/' + 'Nitrate' + ".html", auto_open=False)
+# trace1 = plot_trace(suna_frame, 'index', 'nitrate_uM', 'Nitrate')
+# data = [trace1]
+# layout = plot_layout('Nitrate - TESTING', '<span>&#181;</span>M') ## Testing in plot title.
+# fig = go.Figure(data=data, layout=layout)
+# pio.write_html(fig, file= 'ecoobs/' + 'Nitrate' + ".html", auto_open=False)
 
 ## Plot [O2]bio
 
@@ -509,7 +509,7 @@ for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N
 frame.to_csv('MIMS_data_vol2.csv.gz')
 ctd_mims_round.to_csv('o2bio_vol2.1.csv') ## vol 2.1 uses CTD for temp instead of SCCOOS, starts on May 18, 2023
 ctd_frame.to_csv('CTD_data_vol1.csv.gz')
-suna_frame.to_csv('SUNAV2_data_vol1.csv.gz')
+# suna_frame.to_csv('SUNAV2_data_vol1.csv.gz')
 
 #%% clean dropbox folder
 
@@ -537,8 +537,8 @@ for f in os.listdir(path_ctd):
 ## Clean the dropbox folder by moving all SUNA sbslog files. Files currently
 ## being written have "lock" in the extension.
 
-processed_files = set(suna_frame.source_file.str.split('.', expand = True)[0])
-for f in os.listdir(path_suna):
-    f_base = f.split('.')[0]
-    if f_base in processed_files:
-        shutil.move(path_suna + f, data_store_suna + f)
+# processed_files = set(suna_frame.source_file.str.split('.', expand = True)[0])
+# for f in os.listdir(path_suna):
+#     f_base = f.split('.')[0]
+#     if f_base in processed_files:
+#         shutil.move(path_suna + f, data_store_suna + f)
