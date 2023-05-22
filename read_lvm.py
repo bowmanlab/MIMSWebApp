@@ -193,27 +193,35 @@ for filename in suna_files:
     nitrate_um = []
     nitrate_mg = []
     
-    if base_name not in old_files: 
-        with open(filename, 'r') as file_in:
-            for line in file_in:
-                if line.startswith('<?xml'):
-                    names = re.findall('<Name>[^<]*</Name>', line)
-                elif line.startswith('SATSLF1921'):
-                    line = line.strip()
-                    line = line.rstrip()
-                    line = line.split(',')
-                    
-                    year = pd.to_datetime(line[1][0:4], format = '%Y', utc = True)
-                    date = year + timedelta(float(line[1][-3:]) - 1)
-                    date_time = date + timedelta(float(line[2])/24)
-                    
-                    ## It's a little silly to parse dates for all lines and only use the last date, but it works.
-                    
-                    nitrate_um.append(float(line[3]))
-                    nitrate_mg.append(float(line[4]))
+    if base_name not in old_files:
+        try:
+            with open(filename, 'r') as file_in:
+                for line in file_in:
+                    if line.startswith('<?xml'):
+                        names = re.findall('<Name>[^<]*</Name>', line)
+                    elif line.startswith('SATSLF1921'):
+                        line = line.strip()
+                        line = line.rstrip()
+                        line = line.split(',')
+                        
+                        year = pd.to_datetime(line[1][0:4], format = '%Y', utc = True)
+                        date = year + timedelta(float(line[1][-3:]) - 1)
+                        date_time = date + timedelta(float(line[2])/24)
+                        
+                        ## It's a little silly to parse dates for all lines and only use the last date, but it works.
+                        
+                        nitrate_um.append(float(line[3]))
+                        nitrate_mg.append(float(line[4]))
 
-        print('adding', base_name)                     
-        suna_new_data.loc[date_time] = pd.Series([np.average(nitrate_um), np.average(nitrate_mg), base_name], index = suna_col_str)      
+            print('adding', base_name)                     
+            suna_new_data.loc[date_time] = pd.Series([np.average(nitrate_um), np.average(nitrate_mg), base_name], index = suna_col_str)  
+            
+        except NameError:
+            
+            ## NameError happens if there isn't a valid data line in file.  Currently, the SUNA is creating
+            ## two types of log files but it isn't clear why this is happening.
+            
+            continue
                     
 li.append(suna_new_data)                              
 suna_frame = pd.concat(li, axis = 0, ignore_index=False)
