@@ -436,11 +436,11 @@ ctd_mims_round['o2_bio'] = ((ctd_mims_round['O2:Ar'] * ctd_mims_round['O2_CF']) 
 
 ## Plot NO3
 
-# trace1 = plot_trace(suna_frame, 'index', 'nitrate_uM', 'Nitrate')
-# data = [trace1]
-# layout = plot_layout('Nitrate - TESTING', '<span>&#181;</span>M') ## Testing in plot title.
-# fig = go.Figure(data=data, layout=layout)
-# pio.write_html(fig, file= 'ecoobs/' + 'Nitrate' + ".html", auto_open=False)
+trace1 = plot_trace(suna_frame, 'index', 'nitrate_uM', 'Nitrate')
+data = [trace1]
+layout = plot_layout('Nitrate - TESTING', '<span>&#181;</span>M') ## Testing in plot title.
+fig = go.Figure(data=data, layout=layout)
+pio.write_html(fig, file= 'ecoobs/' + 'Nitrate' + ".html", auto_open=False)
 
 ## Plot [O2]bio
 
@@ -509,7 +509,7 @@ for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N
 frame.to_csv('MIMS_data_vol2.csv.gz')
 ctd_mims_round.to_csv('o2bio_vol2.1.csv') ## vol 2.1 uses CTD for temp instead of SCCOOS, starts on May 18, 2023
 ctd_frame.to_csv('CTD_data_vol1.csv.gz')
-# suna_frame.to_csv('SUNAV2_data_vol1.csv.gz')
+suna_frame.to_csv('SUNAV2_data_vol1.csv.gz')
 
 #%% clean dropbox folder
 
@@ -537,8 +537,8 @@ for f in os.listdir(path_ctd):
 ## Clean the dropbox folder by moving all SUNA sbslog files. Files currently
 ## being written have "lock" in the extension.
 
-# processed_files = set(suna_frame.source_file.str.split('.', expand = True)[0])
-# for f in os.listdir(path_suna):
-#     f_base = f.split('.')[0]
-#     if f_base in processed_files:
-#         shutil.move(path_suna + f, data_store_suna + f)
+processed_files = set(suna_frame.source_file.str.split('.', expand = True)[0])
+for f in os.listdir(path_suna):
+    f_base = f.split('.')[0]
+    if f_base in processed_files:
+        shutil.move(path_suna + f, data_store_suna + f)
