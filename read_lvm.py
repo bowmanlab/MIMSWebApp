@@ -434,6 +434,9 @@ ctd_mims_round['o2_bio'] = ((ctd_mims_round['O2:Ar'] * ctd_mims_round['O2_CF']) 
 
 #%% Create plots.
 
+#!!! Because this uses ctd_mims_round plots are only shown for data periods
+#!!! where MIMS is operational.  Better to use ctd_temp_round
+
 ## Plot NO3
 
 trace1 = plot_trace(suna_frame, 'index', 'nitrate_uM', 'Nitrate')
