@@ -434,8 +434,7 @@ ctd_mims_round['o2_bio'] = ((ctd_mims_round['O2:Ar'] * ctd_mims_round['O2_CF']) 
 
 #%% Create plots.
 
-#!!! Because this uses ctd_mims_round plots are only shown for data periods
-#!!! where MIMS is operational.  Better to use ctd_temp_round
+## Use ctd_temp_round for CTD data so that it plots when MIMS is down.
 
 ## Plot NO3
 
@@ -455,7 +454,7 @@ pio.write_html(fig, file= 'ecoobs/' + 'O2_bio' + ".html", auto_open=False)
 
 ## Plot temp
 
-trace1 = plot_trace(ctd_mims_round, 'index', 'Temperature [ITS-90 deg C]', 'T deg C')
+trace1 = plot_trace(ctd_temp_round, 'index', 'Temperature [ITS-90 deg C]', 'T deg C')
 data = [trace1]
 layout = plot_layout('Temperature - TESTING', 'T deg C') ## Testing in plot title.
 fig = go.Figure(data=data, layout=layout)
@@ -463,7 +462,7 @@ pio.write_html(fig, file= 'ecoobs/' + 'Temperature' + ".html", auto_open=False)
 
 ## Plot salinity
 
-trace1 = plot_trace(ctd_mims_round, 'index', 'Salinity [PSU]', 'PSU')
+trace1 = plot_trace(ctd_temp_round, 'index', 'Salinity [PSU]', 'PSU')
 data = [trace1]
 layout = plot_layout('Salinity - TESTING', 'PSU') ## Testing in plot title.
 fig = go.Figure(data=data, layout=layout)
@@ -471,7 +470,7 @@ pio.write_html(fig, file= 'ecoobs/' + 'Salinity' + ".html", auto_open=False)
 
 ## Plot fluorescence
 
-trace1 = plot_trace(ctd_mims_round, 'index', 'Fluorescence [mg/m^3]', 'mg/m^3')
+trace1 = plot_trace(ctd_temp_round, 'index', 'Fluorescence [mg/m^3]', 'mg/m^3')
 data = [trace1]
 layout = plot_layout('Chlorophyll - TESTING', 'mg m<sup>3</sup>') ## Testing in plot title.
 fig = go.Figure(data=data, layout=layout)
@@ -479,7 +478,7 @@ pio.write_html(fig, file= 'ecoobs/' + 'Chlorophyll' + ".html", auto_open=False)
 
 ## Plot O2
 
-trace1 = plot_trace(ctd_mims_round, 'index', 'Oxygen [umol/l]', 'umol/l')
+trace1 = plot_trace(ctd_temp_round, 'index', 'Oxygen [umol/l]', 'umol/l')
 data = [trace1]
 layout = plot_layout('Dissolved Oxygen - TESTING', '<span>&#181;</span>M') ## Testing in plot title.
 fig = go.Figure(data=data, layout=layout)
