@@ -125,7 +125,7 @@ def plot_layout(name, ylab):
 
 ## Function for line trace for plots.
 
-def plot_trace(data, paramx, paramy, name, data_filter = None):
+def plot_trace(data, paramx, paramy, name, data_filter = None, length_limit = 1000):
     
     ## Allow the index to be the x variable.
     
@@ -136,9 +136,11 @@ def plot_trace(data, paramx, paramy, name, data_filter = None):
         
     try:
         if data_filter == None:
-            data_filter = [True] * len(paramx)
+            data_filter = [False] * len(paramx)
+            data_filter[-length_limit:] = [True] * len(data_filter[-length_limit:])
     except ValueError:
-        pass
+        inv_length_limit = len(data_filter) - length_limit
+        data_filter[0:inv_length_limit] = [False] * inv_length_limit
     
     trace = go.Scatter(
     x = paramx[data_filter],
@@ -486,7 +488,7 @@ pio.write_html(fig, file= 'ecoobs/' + 'Oxygen' + ".html", auto_open=False)
 
 ## Plot O2 % Sat
 
-trace1 = plot_trace(ctd_mims_round, 'index', 'Oxygen [% saturation]', '%')
+trace1 = plot_trace(ctd_temp_round, 'index', 'Oxygen [% saturation]', '%')
 data = [trace1]
 layout = plot_layout('Dissolved Oxygen % Sat - TESTING', '%') ## Testing in plot title.
 fig = go.Figure(data=data, layout=layout)
