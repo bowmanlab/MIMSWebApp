@@ -502,7 +502,7 @@ mims_col_filter[0:-20000] = False
             
 for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N2:Ar', 'Water']:
     
-    trace1 = plot_trace(sort, 'time', col, '', mims_col_filter, length_limit = 10000)
+    trace1 = plot_trace(sort, 'time', col, '', mims_col_filter, length_limit = 20000)
     data = [trace1]
     layout = plot_layout(col + ' - TESTING', col) ## Testing in plot title.
     fig = go.Figure(data=data, layout=layout)
