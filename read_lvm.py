@@ -400,7 +400,7 @@ ctd_temp_round['O2:Ar_sat'] = ctd_temp_round['O2_sat'] / ctd_temp_round['Ar_sat'
 
 sort_round = sort[['O2', 'O2:Ar', 'N2:Ar']]
 sort_round.index = sort.time
-sort_round.loc[sort_round.index, 'date_time'] = sort_round.index.round('5T')
+sort_round['date_time'] = sort_round.index.round('5T')
 sort_round = sort_round.groupby(sort_round.date_time).mean()
 
 ctd_mims_round = pd.concat([ctd_temp_round, sort_round], axis = 1, join = 'inner')
