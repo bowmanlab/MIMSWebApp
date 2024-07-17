@@ -166,6 +166,8 @@ if not os.path.isdir(data_store):
     os.makedirs(data_store)
     
 #%% SUNA data
+    
+## Note that SUNA data are UTC
 
 suna_files = glob.glob(path_suna + "*.sbslog")
 suna_files.sort(key = lambda x: os.path.getmtime(x))
