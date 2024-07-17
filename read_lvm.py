@@ -84,7 +84,7 @@ def O2sat(S, T):
 
 ## Function for general layout for plots.
 
-def plot_layout(name, ylab):
+def plot_layout(name, ylab, xlab='Date'):
     layout = go.Layout(
         plot_bgcolor='#f6f7f8',
         paper_bgcolor='#f6f7f8',
@@ -99,7 +99,7 @@ def plot_layout(name, ylab):
         ),
         xaxis=go.layout.XAxis(
             title=go.layout.xaxis.Title(
-                text='Date',
+                text=xlab,
                 font=dict(
                     family='Open Sans, sans-serif',
                     size=18,
@@ -444,7 +444,7 @@ ctd_mims_round['o2_bio'] = ((ctd_mims_round['O2:Ar'] * ctd_mims_round['O2_CF']) 
 
 trace1 = plot_trace(suna_frame, 'index', 'nitrate_uM', 'Nitrate')
 data = [trace1]
-layout = plot_layout('Nitrate - TESTING', '<span>&#181;</span>M') ## Testing in plot title.
+layout = plot_layout('Nitrate - TESTING', '<span>&#181;</span>M', 'Date (UTC)') ## Testing in plot title.
 fig = go.Figure(data=data, layout=layout)
 pio.write_html(fig, file= 'ecoobs/' + 'Nitrate' + ".html", auto_open=False)
 
