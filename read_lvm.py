@@ -15,7 +15,7 @@ import re
 #%%% Switch for transitioning between dev machine (windows) and production
 ## machine (Linux)
 
-development = False
+development = True
 use_sccoos = True
 
 if development == True:
@@ -32,9 +32,9 @@ else:
     path_ctd = '/home/jeff/Dropbox/CTD_Data_v1/'
     path_suna = '/home/jeff/Dropbox/SUNAV2_Data_v1/'
     
-    data_store = '/home/jeff/data_store/'
-    data_store_ctd = '/home/jeff/data_store_CTD/'
-    data_store_suna = '/home/jeff/data_store_SUNA/'
+    data_store = '/volumes/hd2/jeff/ecoobs/data_store/'
+    data_store_ctd = '/volumes/hd2/jeff/ecoobs/data_store_CTD/'
+    data_store_suna = '/volumes/hd2/jeff/ecoobs/data_store_SUNA/'
 
 #%%% Functions
 
