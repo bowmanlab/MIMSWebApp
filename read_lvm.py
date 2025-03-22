@@ -252,7 +252,7 @@ ctd_col_str = ['Conductivity [mS/cm]',
 
 try:
     old_frame = pd.read_csv('CTD_data_vol1.csv.gz', index_col = 0)
-    old_frame.index = pd.to_datetime(old_frame.index, format = '%Y-%m-%d %H:%M:%S', utc = True)
+    old_frame.index = pd.to_datetime(old_frame.index, utc = True)
 except FileNotFoundError:
     old_frame = pd.DataFrame(columns = ctd_col_str)
     old_frame['source_file'] = []
