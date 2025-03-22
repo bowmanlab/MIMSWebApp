@@ -15,13 +15,13 @@ import re
 #%%% Switch for transitioning between dev machine (windows) and production
 ## machine (Linux)
 
-development = True
+development = False
 use_sccoos = True
 
 if development == True:
     path_mims = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data_v3//'
     path_ctd = 'C://Users//jeff//Documents//bowman_lab//MIMS//CTD_Data_v1//'
-    path_suna = 'C://Users//jeff//Documents//bowman_lab//MIMS//SUNAV2_Data_v1//'
+    path_suna = 'C://Users//jeff//Documents//bowman_lab//MIMS//SUNAV2_Data_v3//'
     
     data_store = 'C://Users//jeff//Documents//bowman_lab//MIMS//data_store//'
     data_store_ctd = 'C://Users//jeff//Documents//bowman_lab//CTD//data_store//'
@@ -30,7 +30,7 @@ if development == True:
 else:  
     path_mims = '/home/jeff/Dropbox/MIMS_Data_v3/'  # use your path
     path_ctd = '/home/jeff/Dropbox/CTD_Data_v1/'
-    path_suna = '/home/jeff/Dropbox/SUNAV2_Data_v1/'
+    path_suna = '/home/jeff/Dropbox/SUNAV2_Data_v3/'
     
     data_store = '/volumes/hd2/jeff/ecoobs/data_store/'
     data_store_ctd = '/volumes/hd2/jeff/ecoobs/data_store_CTD/'
@@ -167,22 +167,22 @@ if not os.path.isdir(data_store):
     
 #%% SUNA data
     
-## Note that SUNA data are UTC
+## Note that SUNA data are UTC though files are named according to local time
 
-suna_files = glob.glob(path_suna + "*.sbslog")
-suna_files.sort(key = lambda x: os.path.getmtime(x))
+suna_files = glob.glob(path_suna + "*SUNA.txt")
+suna_files.sort()
 
-suna_col_str = ['nitrate_uM', 'nitrate_mg', 'source_file']
+suna_col_str = ['nitrate_uM', 'N2_mg', 'source_file']
 
 try:
-    suna_old_frame = pd.read_csv('SUNAV2_data_vol1.csv.gz', index_col = 0)
+    suna_old_frame = pd.read_csv('SUNAV2_data_vol3.csv.gz', index_col = 0)
     suna_old_frame.index = pd.to_datetime(suna_old_frame.index, format = '%Y-%m-%d %H:%M:%S', utc = True)
 except FileNotFoundError:
     suna_old_frame = pd.DataFrame(columns = suna_col_str)
     
 li = [suna_old_frame]
 
-## Iterate across the sbslog files.
+## Iterate across the SUNA.txt files.
 
 old_files = set(suna_old_frame.source_file)
 suna_new_data = pd.DataFrame(columns = suna_col_str)
@@ -195,15 +195,13 @@ for filename in suna_files:
         base_name = filename.split('/')[-1]
         
     nitrate_um = []
-    nitrate_mg = []
+    n2_mg = []
     
     if base_name not in old_files:
         try:
             with open(filename, 'r') as file_in:
                 for line in file_in:
-                    if line.startswith('<?xml'):
-                        names = re.findall('<Name>[^<]*</Name>', line)
-                    elif line.startswith('SATSLF1921'):
+                    if line.startswith('SATSLF1921'):
                         line = line.strip()
                         line = line.rstrip()
                         line = line.split(',')
@@ -215,7 +213,7 @@ for filename in suna_files:
                         ## It's a little silly to parse dates for all lines and only use the last date, but it works.
                         
                         nitrate_um.append(float(line[3]))
-                        nitrate_mg.append(float(line[4]))
+                        n2_mg.append(float(line[4]))
 
             print('adding', base_name)                     
             suna_new_data.loc[date_time] = pd.Series([np.average(nitrate_um), np.average(nitrate_mg), base_name], index = suna_col_str)  
@@ -515,7 +513,7 @@ for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N
 frame.to_csv('MIMS_data_vol2.csv.gz')
 ctd_mims_round.to_csv('o2bio_vol2.1.csv') ## vol 2.1 uses CTD for temp instead of SCCOOS, starts on May 18, 2023
 ctd_frame.to_csv('CTD_data_vol1.csv.gz')
-suna_frame.to_csv('SUNAV2_data_vol1.csv.gz')
+suna_frame.to_csv('SUNAV2_data_vol3.csv.gz')
 
 #%% clean dropbox folder
 
