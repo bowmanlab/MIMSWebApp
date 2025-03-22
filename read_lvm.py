@@ -1,3 +1,8 @@
+"""
+Current issues:
+    *Code doesn't work with plotly versions greater than 5.9
+"""
+
 import numpy as np
 import pandas as pd
 import glob
@@ -175,7 +180,7 @@ suna_files.sort()
 suna_col_str = ['nitrate_uM', 'N2_mg', 'source_file']
 
 try:
-    suna_old_frame = pd.read_csv('SUNAV2_data_vol3.csv.gz', index_col = 0)
+    suna_old_frame = pd.read_csv('ecoobs/SUNAV2_data_vol3.csv.gz', index_col = 0)
     suna_old_frame.index = pd.to_datetime(suna_old_frame.index, format = '%Y-%m-%d %H:%M:%S', utc = True)
 except FileNotFoundError:
     suna_old_frame = pd.DataFrame(columns = suna_col_str)
@@ -216,7 +221,7 @@ for filename in suna_files:
                         n2_mg.append(float(line[4]))
 
             print('adding', base_name)                     
-            suna_new_data.loc[date_time] = pd.Series([np.average(nitrate_um), np.average(nitrate_mg), base_name], index = suna_col_str)  
+            suna_new_data.loc[date_time] = pd.Series([np.average(nitrate_um), np.average(n2_mg), base_name], index = suna_col_str)  
             
         except NameError:
             
@@ -251,8 +256,8 @@ ctd_col_str = ['Conductivity [mS/cm]',
                'flag']
 
 try:
-    old_frame = pd.read_csv('CTD_data_vol1.csv.gz', index_col = 0)
-    old_frame.index = pd.to_datetime(old_frame.index, utc = True)
+    old_frame = pd.read_csv('ecoobs/CTD_data_vol1.csv.gz', index_col = 0)
+    old_frame.index = pd.to_datetime(old_frame.index, utc = True, format = 'mixed')
 except FileNotFoundError:
     old_frame = pd.DataFrame(columns = ctd_col_str)
     old_frame['source_file'] = []
@@ -315,7 +320,7 @@ col_str = ["time", "ms", "Water", "N2", "O2", "Ar", "Inlet Temperature", "Vacuum
 ## combined data file, and create a new one if not present.
 
 try:
-    old_frame = pd.read_csv('MIMS_data_vol2.csv.gz', index_col = 0)
+    old_frame = pd.read_csv('ecoobs/MIMS_data_vol3.csv.gz', index_col = 0)
 except FileNotFoundError:
     old_frame = pd.DataFrame(columns = col_str)
     old_frame['source_file'] = []
@@ -510,10 +515,10 @@ for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N
     
 #%% export data
    
-frame.to_csv('MIMS_data_vol2.csv.gz')
-ctd_mims_round.to_csv('o2bio_vol2.1.csv') ## vol 2.1 uses CTD for temp instead of SCCOOS, starts on May 18, 2023
-ctd_frame.to_csv('CTD_data_vol1.csv.gz')
-suna_frame.to_csv('SUNAV2_data_vol3.csv.gz')
+frame.to_csv('ecoobs/MIMS_data_vol3.csv.gz')
+ctd_mims_round.to_csv('ecoobs/o2bio_vol2.1.csv') ## vol 2.1 uses CTD for temp instead of SCCOOS, starts on May 18, 2023
+ctd_frame.to_csv('ecoobs/CTD_data_vol1.csv.gz')
+suna_frame.to_csv('ecoobs/SUNAV2_data_vol3.csv.gz')
 
 #%% clean dropbox folder
 
