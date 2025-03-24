@@ -233,6 +233,7 @@ for filename in suna_files:
 li.append(suna_new_data)                              
 suna_frame = pd.concat(li, axis = 0, ignore_index=False)
 suna_frame.sort_index(ascending = True, inplace = True)
+suna_frame['local_time'] = suna_frame.index.tz_convert(tz = 'America/Los_Angeles')
         
 #%% CTD data
 
@@ -445,9 +446,9 @@ ctd_mims_round['o2_bio'] = ((ctd_mims_round['O2:Ar'] * ctd_mims_round['O2_CF']) 
 
 ## Plot NO3
 
-trace1 = plot_trace(suna_frame, 'index', 'nitrate_uM', 'Nitrate')
+trace1 = plot_trace(suna_frame, 'local_time', 'nitrate_uM', 'Nitrate')
 data = [trace1]
-layout = plot_layout('Nitrate - TESTING', '<span>&#181;</span>M', 'Date (UTC)') ## Testing in plot title.
+layout = plot_layout('Nitrate - TESTING', '<span>&#181;</span>M', 'Date') ## Testing in plot title.
 fig = go.Figure(data=data, layout=layout)
 pio.write_html(fig, file= 'ecoobs/' + 'Nitrate' + ".html", auto_open=False)
 
