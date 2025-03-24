@@ -181,7 +181,7 @@ suna_col_str = ['nitrate_uM', 'N2_mg', 'source_file']
 
 try:
     suna_old_frame = pd.read_csv('ecoobs/SUNAV2_data_vol3.csv.gz', index_col = 0)
-    suna_old_frame.index = pd.to_datetime(suna_old_frame.index, format = '%Y-%m-%d %H:%M:%S', utc = True)
+    suna_old_frame.index = pd.to_datetime(pd.to_datetime(suna_old_frame.index, utc = True, format = 'mixed'))
 except FileNotFoundError:
     suna_old_frame = pd.DataFrame(columns = suna_col_str)
     
