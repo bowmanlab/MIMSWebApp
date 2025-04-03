@@ -24,8 +24,8 @@ development = False
 use_sccoos = True
 
 if development == True:
-    path_mims = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data_v3//'
-    path_ctd = 'C://Users//jeff//Documents//bowman_lab//MIMS//CTD_Data_v1//'
+    path_mims = 'C://Users//jeff//Documents//bowman_lab//MIMS//MIMS_Data_v4//'
+    path_ctd = 'C://Users//jeff//Documents//bowman_lab//MIMS//CTD_Data_v2//'
     path_suna = 'C://Users//jeff//Documents//bowman_lab//MIMS//SUNAV2_Data_v3//'
     
     data_store = 'C://Users//jeff//Documents//bowman_lab//MIMS//data_store//'
@@ -33,8 +33,8 @@ if development == True:
     data_store_suna = 'C://Users//jeff//Documents//bowman_lab//SUNA//data_store//'
     
 else:  
-    path_mims = '/home/jeff/Dropbox/MIMS_Data_v3/'  # use your path
-    path_ctd = '/home/jeff/Dropbox/CTD_Data_v1/'
+    path_mims = '/home/jeff/Dropbox/MIMS_Data_v4/'  # use your path
+    path_ctd = '/home/jeff/Dropbox/CTD_Data_v2/'
     path_suna = '/home/jeff/Dropbox/SUNAV2_Data_v3/'
     
     data_store = '/volumes/hd2/jeff/ecoobs/data_store/'
@@ -257,7 +257,7 @@ ctd_col_str = ['Conductivity [mS/cm]',
                'flag']
 
 try:
-    old_frame = pd.read_csv('ecoobs/CTD_data_vol1.csv.gz', index_col = 0)
+    old_frame = pd.read_csv('ecoobs/CTD_data_vol2.csv.gz', index_col = 0)
     old_frame.index = pd.to_datetime(old_frame.index, utc = True, format = 'mixed')
 except FileNotFoundError:
     old_frame = pd.DataFrame(columns = ctd_col_str)
@@ -321,7 +321,7 @@ col_str = ["time", "ms", "Water", "N2", "O2", "Ar", "Inlet Temperature", "Vacuum
 ## combined data file, and create a new one if not present.
 
 try:
-    old_frame = pd.read_csv('ecoobs/MIMS_data_vol3.csv.gz', index_col = 0)
+    old_frame = pd.read_csv('ecoobs/MIMS_data_vol4.csv.gz', index_col = 0)
 except FileNotFoundError:
     old_frame = pd.DataFrame(columns = col_str)
     old_frame['source_file'] = []
@@ -516,10 +516,10 @@ for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N
     
 #%% export data
    
-frame.to_csv('ecoobs/MIMS_data_vol3.csv.gz')
-ctd_mims_round.to_csv('ecoobs/o2bio_vol2.1.csv') ## vol 2.1 uses CTD for temp instead of SCCOOS, starts on May 18, 2023
-ctd_frame.to_csv('ecoobs/CTD_data_vol1.csv.gz')
-suna_frame.to_csv('ecoobs/SUNAV2_data_vol3.csv.gz')
+frame.to_csv('ecoobs/MIMS_data_vol4.csv.gz') ## vol4 starts 3 April 2025
+ctd_mims_round.to_csv('ecoobs/o2bio_vol3.csv') ## vol 2.1 uses CTD for temp instead of SCCOOS, starts on May 18, 2023, vol 3 starts 3 April 2025
+ctd_frame.to_csv('ecoobs/CTD_data_vol2.csv.gz') ## vol 2 starts flow through configuration on 3 April 2025
+suna_frame.to_csv('ecoobs/SUNAV2_data_vol3.csv.gz') ## vol 3 starts water bath configuration 27 March 2025
 
 #%% clean dropbox folder
 
