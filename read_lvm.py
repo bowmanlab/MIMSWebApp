@@ -132,6 +132,8 @@ def plot_layout(name, ylab, xlab='Date'):
 
 def plot_trace(data, paramx, paramy, name, data_filter = None, length_limit = 1000):
     
+    data = data.sort_index()
+    
     ## Allow the index to be the x variable.
     
     if paramx == 'index':
@@ -140,7 +142,7 @@ def plot_trace(data, paramx, paramy, name, data_filter = None, length_limit = 10
         paramx = data[paramx]
         
     try:
-        if data_filter == None:
+        if data_filter is None:
             data_filter = [False] * len(paramx)
             data_filter[-length_limit:] = [True] * len(data_filter[-length_limit:])
     except ValueError:
@@ -149,7 +151,7 @@ def plot_trace(data, paramx, paramy, name, data_filter = None, length_limit = 10
     
     trace = go.Scatter(
     x = paramx[data_filter],
-    y = data.loc[:, paramy][data_filter],
+    y = data.loc[data_filter, paramy],
     xaxis='x1',
     yaxis='y1',
     marker=go.scatter.Marker(
@@ -454,7 +456,8 @@ pio.write_html(fig, file= 'ecoobs/' + 'Nitrate' + ".html", auto_open=False)
 
 ## Plot [O2]bio
 
-trace1 = plot_trace(ctd_mims_round, 'index', 'o2_bio', '[O2]bio', ctd_mims_round_col_filter)
+trace1 = plot_trace(ctd_mims_round, 'index', 'o2_bio', '[O2]bio')
+#trace1 = plot_trace(ctd_mims_round, 'index', 'o2_bio', '[O2]bio', ctd_mims_round_col_filter)
 data = [trace1]
 layout = plot_layout('[O<sub>2</sub>]<sub>bio</sub> - TESTING', '[O<sub>2</sub>]<sub>bio</sub> <span>&#181;</span>M') ## Testing in plot title.
 fig = go.Figure(data=data, layout=layout)
@@ -508,7 +511,8 @@ mims_col_filter[0:-20000] = False
             
 for col in ['O2', 'Ar', 'Inlet Temperature', 'Vacuum Pressure', 'N2','O2:Ar', 'N2:Ar', 'Water']:
     
-    trace1 = plot_trace(sort, 'time', col, '', mims_col_filter, length_limit = 20000)
+    trace1 = plot_trace(sort, 'time', col, '', length_limit = 20000)
+    #trace1 = plot_trace(sort, 'time', col, '', mims_col_filter, length_limit = 20000)
     data = [trace1]
     layout = plot_layout(col + ' - TESTING', col) ## Testing in plot title.
     fig = go.Figure(data=data, layout=layout)
